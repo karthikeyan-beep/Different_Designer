@@ -3,11 +3,10 @@ import {
   StyleSheet,
   KeyboardAvoidingView,
   View,
-  TouchableOpacity,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
-
-import { TextInput } from "react-native-paper";
+import Icon from 'react-native-vector-icons/EvilIcons';
+import { TextInput, RadioButton, Text } from "react-native-paper";
 
 const AddCustomer = () => {
   const [customerName, setcustomerName] = React.useState("");
@@ -15,6 +14,7 @@ const AddCustomer = () => {
   const [orderDate, setOrderDate] = React.useState("");
   const [deliveryDate, setDeliveryDate] = React.useState("");
   const [datePickerType, setDatePickerType] = React.useState("");
+  const [checked, setChecked] = React.useState("Male");
   const [show, setShow] = React.useState(false);
 
   const showDatePicker = async (type) => {
@@ -24,11 +24,16 @@ const AddCustomer = () => {
 
   const onDateChange = (event, selectedDate) => {
     setShow(false);
+
+    if (event.type === "dismissed") {
+      return;
+    }
+
     if (selectedDate) {
-      const formattedDate = formatDate(selectedDate); 
-      if (datePickerType === 'orderDate') {
+      const formattedDate = formatDate(selectedDate);
+      if (datePickerType === "orderDate") {
         setOrderDate(formattedDate);
-      } else if (datePickerType === 'deliveryDate') {
+      } else if (datePickerType === "deliveryDate") {
         setDeliveryDate(formattedDate);
       }
     }
@@ -81,7 +86,7 @@ const AddCustomer = () => {
           right={
             <TextInput.Icon
               icon="calendar"
-              onPress={() => showDatePicker('orderDate')}
+              onPress={() => showDatePicker("orderDate")}
             />
           }
         />
@@ -93,7 +98,12 @@ const AddCustomer = () => {
           style={styles.dateInput}
           keyboardType="phone-pad"
           editable={false}
-          right={<TextInput.Icon icon="calendar" onPress={() => showDatePicker('deliveryDate')}/>}
+          right={
+            <TextInput.Icon
+              icon="calendar"
+              onPress={() => showDatePicker("deliveryDate")}
+            />
+          }
         />
       </View>
       {show && (
@@ -105,6 +115,73 @@ const AddCustomer = () => {
           onChange={onDateChange}
         />
       )}
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "space-between",
+          width: "90%",
+          margin: 10,
+        }}
+      >
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "55%",
+          }}
+        >
+          <RadioButton
+            value="Male"
+            status={checked === "Male" ? "checked" : "unchecked"}
+            onPress={() => setChecked("Male")}
+            color="#C2CCD3"
+            uncheckedColor="#C2CCD3"
+          />
+          <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Male</Text>
+        </View>
+
+        <View
+          style={{
+            flexDirection: "row",
+            alignItems: "center",
+            width: "50%",
+          }}
+        >
+          <RadioButton
+            value="Female"
+            status={checked === "Female" ? "checked" : "unchecked"}
+            onPress={() => setChecked("Female")}
+            color="#C2CCD3"
+            uncheckedColor="#C2CCD3"
+          />
+          <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Female</Text>
+        </View>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          width: "90%",
+          margin: 10,
+        }}
+      >
+        <Text style={{ fontWeight: "bold", color: "#C2CCD3", fontSize: 15 }}>
+          MEASUREMENT
+        </Text>
+      </View>
+      <View
+        style={{
+          flexDirection: "row",
+          justifyContent: "flex-end",
+          width: "90%",
+          alignItems: "center",
+          margin: 10,
+        }}
+      >
+        <Text style={{ fontWeight: "bold", color: "#C2CCD3", fontSize: 12, marginRight:5 }}>
+          Select Measurement Type
+        </Text>
+        <Icon name="plus" size={28} />
+      </View>
     </KeyboardAvoidingView>
   );
 };
