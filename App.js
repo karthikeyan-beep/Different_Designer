@@ -41,7 +41,7 @@ export default function App() {
           options={{
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
-            headerTitle: 'Add Customer',
+            headerTitle: 'NEW BILL',
             animation:'slide_from_right',
             headerShadowVisible: false,
           }}
@@ -52,7 +52,7 @@ export default function App() {
           options={{
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
-            headerTitle: 'View Customer',
+            headerTitle: 'VIEW BILL',
             animation:'slide_from_right',
             headerShadowVisible: false,
           }}

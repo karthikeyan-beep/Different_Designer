@@ -8,13 +8,13 @@ import {
 } from "react-native";
 import Spinner from "react-native-loading-spinner-overlay";
 import { useNavigation } from "@react-navigation/native";
-import Icon from "react-native-vector-icons/AntDesign";
+// import Icon from "react-native-vector-icons/AntDesign";
 
 const Welcome = () => {
   const [loading, setLoading] = useState(true);
   const items = [
-    { title: "Add Customer", route: "AddCustomer", icon: "adduser" },
-    { title: "View Customer", route: "ViewCustomer", icon: "eyeo" },
+    { title: "NEW BILL", route: "AddCustomer", icon: "adduser" },
+    { title: "VIEW BILL", route: "ViewCustomer", icon: "eyeo" },
   ];
 
   const navigation = useNavigation();
@@ -43,7 +43,6 @@ const Welcome = () => {
               onPress={() => navigation.navigate(item.route)}
             >
               <View style={styles.item}>
-              <Icon name={item.icon} size={30} color="#C2CCD3" />
                 <Text style={styles.text}>{item.title}</Text>
               </View>
             </TouchableOpacity>
@@ -76,7 +75,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#1F4E67",
     margin: 20,
     padding: 20,
-    height: 200,
+    height: 80,
     width: 200,
     borderRadius: 20,
   },
