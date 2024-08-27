@@ -8,7 +8,6 @@ import {
 } from "react-native";
 import Spinner from "react-native-loading-spinner-overlay";
 import { useNavigation } from "@react-navigation/native";
-// import Icon from "react-native-vector-icons/AntDesign";
 
 const Welcome = () => {
   const [loading, setLoading] = useState(true);
