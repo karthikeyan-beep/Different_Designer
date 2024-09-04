@@ -8,6 +8,8 @@ import {
   FlatList,
   TouchableOpacity,
   Modal,
+  SafeAreaView,
+  Alert,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
@@ -20,11 +22,13 @@ import {
 } from "react-native-paper";
 import InputSpinner from "react-native-input-spinner";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import AWIcon from "react-native-vector-icons/FontAwesome";
 import { formatDate } from "../functions/AddCustService";
 import {
   measurementsInitialState,
   inputFields,
   pickerSelection,
+  costLookup,
 } from "../Constants";
 import AddCustTextInput from "../common/AddCustTextInput";
 
@@ -37,37 +41,150 @@ const AddCustomer = () => {
   const [checked, setChecked] = React.useState("Male");
   const [selectedValue, setSelectedValue] = React.useState(pickerSelection[0]);
   const [modalVisible, setModalVisible] = React.useState(false);
+  const [spinnerValue, setSpinnerValue] = React.useState(1);
+  const [totalOrderValue, setTotalOrderValue] = React.useState("0");
+
+  const [editselectedValue, setEditSelectedValue] = React.useState(
+    pickerSelection[0]
+  );
+  const [editspinnerValue, setEditSpinnerValue] = React.useState(1);
+  const [cost, setCost] = React.useState("");
+  const [advance, setAdvance] = React.useState("");
+  const [balance, setBalance] = React.useState(0);
 
   const [measurements, setMeasurements] = React.useState({
     measurementsInitialState,
   });
 
   const [show, setShow] = React.useState(false);
+  const [tableData, setTableData] = React.useState([]);
 
-  const exampleData = [
-    { id: 1, Item: "Blouse1", Qty: 1, Cost: 200 },
-    { id: 2, Item: "Blouse2", Qty: 1, Cost: 200 },
-    { id: 3, Item: "Blouse3", Qty: 1, Cost: 200 },
-    { id: 4, Item: "Blouse4", Qty: 1, Cost: 200 },
-    { id: 5, Item: "Blouse5", Qty: 1, Cost: 200 },
-  ];
+  const handleAdvance = (advance) => {
+    setAdvance(advance);
+    const reduceBalance = totalOrderValue - Number(advance);
+    setBalance(reduceBalance);
+  };
+
+  const handleTableData = () => {
+    const newItem = {
+      id: selectedValue,
+      Item: selectedValue,
+      Qty: spinnerValue,
+      Cost: spinnerValue * getCostForItem(selectedValue),
+    };
+    setTableData((prevTableData) => {
+      const itemExists = prevTableData.some(
+        (item) => item.id === selectedValue
+      );
+
+      if (itemExists) {
+        Alert.alert(
+          "Duplicate Entry",
+          `${selectedValue} already exists`
+        );
+        return prevTableData;
+      }
+
+      const updatedTableData = [...prevTableData, newItem];
+      const newTotalCost = updatedTableData.reduce(
+        (sum, item) => sum + item.Cost,
+        0
+      );
+      setTotalOrderValue(newTotalCost);
+      setBalance(newTotalCost - advance);
+      return updatedTableData;
+    });
+  };
+
+  const handleDeleteData = () => {
+    setTableData((prevTableData) => {
+      const updatedTableData = prevTableData.filter(
+        (item) => item.Item !== editselectedValue
+      );
+      const newTotalCost = updatedTableData.reduce(
+        (sum, item) => sum + item.Cost,
+        0
+      );
+      setTotalOrderValue(newTotalCost);
+      setBalance(newTotalCost - advance);
+      return updatedTableData;
+    });
+    setModalVisible(false);
+  };
+
+  const getCostForItem = (itemName) => {
+    const foundItem = costLookup.find((costItem) => costItem.item === itemName);
+    return foundItem ? foundItem.cost : 0;
+  };
 
   const renderItem = ({ item }) => {
+    const itemCost = getCostForItem(item.Item);
+    const totalCost = item.Qty * itemCost;
+
     return (
       <View key={item.id} style={styles.row}>
         <Text style={styles.cell}>{item.Item}</Text>
-        <Text style={styles.cell}>{item.Qty}</Text>
+        <Text style={styles.cellQty}>{item.Qty}</Text>
         <Text style={styles.cell}>{item.Cost}</Text>
-        <TouchableOpacity onPress={() => handleSelectedItemEdit(item.id)}>
+        <TouchableOpacity
+          onPress={() => handleSelectedItemEdit(item, totalCost)}
+        >
           <Icon name="mode-edit" size={24} color="black" />
         </TouchableOpacity>
       </View>
     );
   };
 
-  const handleSelectedItemEdit = (id) => {
-    console.log("Edit item with id:", id);
+  const handleSelectedItemEdit = (item) => {
+    setEditSelectedValue(item.Item);
+    setEditSpinnerValue(item.Qty);
+    setCost(String(item.Cost));
     setModalVisible(true);
+  };
+
+  const handleSpinnerChange = (value) => {
+    setEditSpinnerValue(value);
+    const costForItem = getCostForItem(editselectedValue);
+    const totalCost = value * costForItem;
+    setCost(totalCost.toString());
+  };
+
+  const handleUpdate = () => {
+    const costForItem = getCostForItem(editselectedValue);
+    const updatedCost = editspinnerValue * costForItem;
+    const actualCost =
+      updatedCost === Number(cost) ? updatedCost : Number(cost);
+
+    const newItem = {
+      id: editselectedValue,
+      Item: editselectedValue,
+      Qty: editspinnerValue,
+      Cost: actualCost,
+    };
+
+    setTableData((prevTableData) => {
+      const itemIndex = prevTableData.findIndex(
+        (item) => item.Item === editselectedValue
+      );
+      let updatedTableData;
+      if (itemIndex > -1) {
+        updatedTableData = [...prevTableData];
+        updatedTableData[itemIndex] = newItem;
+      } else {
+        updatedTableData = [...prevTableData, newItem];
+      }
+
+      const newTotalOrderValue = updatedTableData.reduce(
+        (sum, item) => sum + item.Cost,
+        0
+      );
+
+      setBalance(newTotalOrderValue - advance);
+      setTotalOrderValue(newTotalOrderValue);
+
+      return updatedTableData;
+    });
+    setModalVisible(false);
   };
 
   const showDatePicker = async (type) => {
@@ -244,7 +361,7 @@ const AddCustomer = () => {
           ))}
         </View>
         <Divider style={{ width: "90%", alignSelf: "center", margin: 0 }} />
-        <View style={{ padding: 16 }}>
+        <View style={{ padding: 16, width: "100%" }}>
           <Text
             style={{
               fontSize: 16,
@@ -289,6 +406,8 @@ const AddCustomer = () => {
               max={100}
               min={1}
               skin="square"
+              value={spinnerValue}
+              onChange={(value) => setSpinnerValue(value)}
               inputStyle={{
                 color: "#1F4E67",
               }}
@@ -298,7 +417,7 @@ const AddCustomer = () => {
               textColor="#C2CCD3"
               mode="outlined"
               buttonColor="#3E525F"
-              onPress={() => console.log("")}
+              onPress={() => handleTableData()}
             >
               Add
             </Button>
@@ -312,22 +431,34 @@ const AddCustomer = () => {
             <Text style={styles.heading}>Edit</Text>
           </View>
           <FlatList
-            data={exampleData}
+            data={tableData}
             scrollEnabled={false}
-            keyExtractor={(item) => item.id.toString()}
+            keyExtractor={(item) => item.id}
             renderItem={renderItem}
           />
           <Modal
             transparent={true}
             visible={modalVisible}
-            onRequestClose={() => {}}
+            onRequestClose={() => setModalVisible(false)}
           >
-            <View style={styles.modal}>
+            <SafeAreaView style={styles.modal}>
               <View style={styles.modalContainer}>
+                <TouchableOpacity onPress={() => setModalVisible(false)}>
+                  <AWIcon
+                    style={{
+                      alignSelf: "flex-end",
+                      marginRight: 5,
+                      marginTop: 5,
+                    }}
+                    name="close"
+                    size={20}
+                    color="#C2CCD3"
+                  />
+                </TouchableOpacity>
                 <View style={styles.modalBodyContainer}>
                   <Picker
                     mode="dialog"
-                    selectedValue={selectedValue}
+                    selectedValue={editselectedValue}
                     style={{
                       width: "80%",
                       height: 35,
@@ -335,7 +466,10 @@ const AddCustomer = () => {
                       fontWeight: "bold",
                       alignSelf: "center",
                     }}
-                    onValueChange={(itemValue) => setSelectedValue(itemValue)}
+                    enabled={false}
+                    onValueChange={(itemValue) => {
+                      setEditSelectedValue(itemValue);
+                    }}
                   >
                     {pickerSelection.map((item, index) => (
                       <Picker.Item
@@ -350,15 +484,126 @@ const AddCustomer = () => {
                     max={100}
                     min={1}
                     skin="square"
+                    value={editspinnerValue}
+                    onChange={(value) => handleSpinnerChange(value)}
                     inputStyle={{
                       color: "#1F4E67",
                     }}
-                    style={{ width: "40%", alignSelf:"center", margin: 10 }}
+                    style={{ width: "40%", alignSelf: "center", margin: 10 }}
                   />
+                  <Text
+                    style={{
+                      alignSelf: "center",
+                      marginTop: 10,
+                      fontWeight: "bold",
+                      color: "#C2CCD3",
+                    }}
+                  >
+                    Cost
+                  </Text>
+                  <TextInput
+                    value={cost}
+                    maxLength={10}
+                    style={{
+                      width: "45%",
+                      alignSelf: "center",
+                      textAlign: "center",
+                      marginTop: 4,
+                    }}
+                    keyboardType="phone-pad"
+                    onChangeText={(cost) => setCost(cost)}
+                  />
+                  <View
+                    style={{
+                      flexDirection: "row",
+                      width: "100%",
+                      justifyContent: "space-around",
+                      marginTop: 20,
+                    }}
+                  >
+                    <Button
+                      mode="contained"
+                      style={{
+                        width: "30%",
+                        backgroundColor: "#21ba45",
+                      }}
+                      onPress={() => handleUpdate()}
+                    >
+                      Update
+                    </Button>
+                    <Button
+                      mode="contained"
+                      style={{
+                        width: "30%",
+                        backgroundColor: "#db2828",
+                      }}
+                      onPress={() => handleDeleteData()}
+                    >
+                      Delete
+                    </Button>
+                  </View>
                 </View>
               </View>
-            </View>
+            </SafeAreaView>
           </Modal>
+          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignSelf: "center",
+              width: "100%",
+            }}
+          >
+            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+              Total Order Value
+            </Text>
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3" }}
+            >{`Rs.${totalOrderValue}`}</Text>
+          </View>
+          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignSelf: "center",
+              width: "100%",
+            }}
+          >
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 9 }}
+            >
+              Advance
+            </Text>
+            <TextInput
+              value={advance}
+              maxLength={10}
+              style={{
+                width: "40%",
+                height: 40,
+                textAlign: "center",
+              }}
+              keyboardType="phone-pad"
+              onChangeText={(advance) => handleAdvance(advance)}
+            />
+          </View>
+          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignSelf: "center",
+              width: "100%",
+            }}
+          >
+            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+              Balance
+            </Text>
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3" }}
+            >{`Rs.${balance}`}</Text>
+          </View>
         </View>
       </ScrollView>
     </KeyboardAvoidingView>
@@ -401,9 +646,9 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-    paddingVertical: 30,
-    paddingHorizontal: 30,
-    width: "90%",
+    paddingVertical: 25,
+    paddingHorizontal: 25,
+    width: "95%",
     alignSelf: "center",
     margin: 10,
   },
@@ -424,7 +669,9 @@ const styles = StyleSheet.create({
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
+    backgroundColor: "#3E525F",
     padding: 10,
+    borderRadius: 6,
   },
   heading: {
     fontSize: 15,
@@ -448,8 +695,15 @@ const styles = StyleSheet.create({
     textAlign: "justify",
     flex: 1,
   },
+  cellQty: {
+    fontSize: 15,
+    fontWeight: "bold",
+    marginLeft: 8,
+    textAlign: "justify",
+    flex: 1,
+  },
   modal: {
-    backgroundColor: "#00000099",
+    backgroundColor: "rgba(0, 0, 0, 0.6)",
     flex: 1,
     alignItems: "center",
     justifyContent: "center",
@@ -460,9 +714,8 @@ const styles = StyleSheet.create({
     borderRadius: 10,
   },
   modalBodyContainer: {
-    paddingVertical:60,
-    paddingHorizontal:10,
-    
+    paddingVertical: 50,
+    paddingHorizontal: 5,
   },
 });
 
