@@ -22,8 +22,9 @@ import {
 } from "react-native-paper";
 import InputSpinner from "react-native-input-spinner";
 import Icon from "react-native-vector-icons/MaterialIcons";
+import CamIcon from "react-native-vector-icons/Entypo";
 import AWIcon from "react-native-vector-icons/FontAwesome";
-import { formatDate } from "../functions/AddCustService";
+import { formatDate, generatePdf} from "../functions/AddCustService";
 import {
   measurementsInitialState,
   inputFields,
@@ -78,10 +79,7 @@ const AddCustomer = () => {
       );
 
       if (itemExists) {
-        Alert.alert(
-          "Duplicate Entry",
-          `${selectedValue} already exists`
-        );
+        Alert.alert("Duplicate Entry", `${selectedValue} already exists`);
         return prevTableData;
       }
 
@@ -580,7 +578,7 @@ const AddCustomer = () => {
               value={advance}
               maxLength={10}
               style={{
-                width: "40%",
+                width: "35%",
                 height: 40,
                 textAlign: "center",
               }}
@@ -603,6 +601,51 @@ const AddCustomer = () => {
             <Text
               style={{ fontWeight: "bold", color: "#C2CCD3" }}
             >{`Rs.${balance}`}</Text>
+          </View>
+          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
+          <View
+            style={{
+              flexDirection: "row",
+              justifyContent: "space-between",
+              alignSelf: "center",
+              marginTop: 15,
+              width: "100%",
+            }}
+          >
+            <View style={styles.camContainer}>
+              <CamIcon name="camera" size={28} color="#C2CCD3" />
+              <Text
+                style={{
+                  fontWeight: "bold",
+                  fontSize: 12,
+                  color: "#C2CCD3",
+                  padding: 8,
+                }}
+              >
+                Add Fabric
+              </Text>
+            </View>
+          </View>
+          <View
+            style={{
+              alignSelf: "center",
+              width: "100%",
+              marginTop: 20,
+              flexDirection: "column-reverse",
+              gap: 10,
+            }}
+          >
+            <Button
+              style={{
+                width: "80%",
+                alignSelf: "center",
+                backgroundColor: "#21ba45",
+              }}
+              mode="contained"
+              onPress={() => generatePdf()}
+            >
+              Generate
+            </Button>
           </View>
         </View>
       </ScrollView>
@@ -650,7 +693,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: 25,
     width: "95%",
     alignSelf: "center",
-    margin: 10,
+    marginTop: 10,
   },
   headerTopBar: {
     backgroundColor: "#44B09E",
@@ -716,6 +759,17 @@ const styles = StyleSheet.create({
   modalBodyContainer: {
     paddingVertical: 50,
     paddingHorizontal: 5,
+  },
+  camContainer: {
+    justifyContent: "center",
+    alignItems: "center",
+    backgroundColor: "#1F4E67",
+    padding: 20,
+    height: 85,
+    width: 150,
+    borderRadius: 20,
+    borderWidth: 2,
+    borderColor: "#C2CCD3",
   },
 });
 
