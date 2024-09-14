@@ -1,20 +1,39 @@
-export const measurementsInitialState = {
-  length: "",
-  fNeckHt: "",
-  chest: "",
-  bNeckHt: "",
-  shoulder: "",
-  waistLoose: "",
-  slvLength: "",
-  slvRound: "",
-  fDotPt: "",
-  midAndRound: "",
-  upChest: "",
-  other1: "",
-  other2: "",
-  other3: "",
-  other4: "",
-};
+// export const measurementsInitialState = {
+//   length: "",
+//   fNeckHt: "",
+//   chest: "",
+//   bNeckHt: "",
+//   shoulder: "",
+//   waistLoose: "",
+//   slvLength: "",
+//   slvRound: "",
+//   fDotPt: "",
+//   midAndRound: "",
+//   upChest: "",
+//   other1: "",
+//   other2: "",
+//   other3: "",
+//   other4: "",
+// };
+
+export const measurementsInitialState = [
+  { name: "length", value: "" },
+  { name: "frontNeckHT", value: "" },
+  { name: "chest", value: "" },
+  { name: "backNeckHT", value: "" },
+  { name: "shoulder", value: "" },
+  { name: "waistLoose", value: "" },
+  { name: "slvLength", value: "" },
+  { name: "slvRound", value: "" },
+  { name: "fDotPt", value: "" },
+  { name: "midAndRound", value: "" },
+  { name: "upChest", value: "" },
+  { name: "other1", value: "" },
+  { name: "other2", value: "" },
+  { name: "other3", value: "" },
+  { name: "other4", value: "" },
+];
+
 
 export const inputFields = [
   {
@@ -25,14 +44,14 @@ export const inputFields = [
   },
   {
     label: "F.NeckHT",
-    name: "fNeckHT",
+    name: "frontNeckHT",
     maxLength: 5,
     keyboardType: "phone-pad",
   },
   { label: "Chest", name: "chest", maxLength: 5, keyboardType: "phone-pad" },
   {
     label: "B.NeckHT",
-    name: "bNeckHT",
+    name: "backNeckHT",
     maxLength: 5,
     keyboardType: "phone-pad",
   },

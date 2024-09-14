@@ -19,7 +19,7 @@ const AddCustTextInput = ({
         keyboardType={keyboardType || "default"}
         style={{ width: "100%", alignContent: "center" }}
         returnKeyType="done"
-        onChangeText={onChange}
+        onChangeText={onChange} 
       />
     </View>
   );

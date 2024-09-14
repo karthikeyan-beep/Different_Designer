@@ -42,7 +42,6 @@ const Welcome = () => {
               onPress={() => navigation.navigate(item.route)}
             >
               <View style={styles.item}>
-                {/* <Icon name={item.icon} size={30} color="#C2CCD3" /> */}
                 <Text style={styles.text}>{item.title}</Text>
               </View>
             </TouchableOpacity>

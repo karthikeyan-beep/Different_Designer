@@ -5,6 +5,7 @@ import {
   View,
   ScrollView,
   Platform,
+  Image,
   FlatList,
   TouchableOpacity,
   Modal,
@@ -22,15 +23,17 @@ import {
 } from "react-native-paper";
 import InputSpinner from "react-native-input-spinner";
 import Icon from "react-native-vector-icons/MaterialIcons";
-import CamIcon from "react-native-vector-icons/Entypo";
+import CamIcon from "react-native-vector-icons/MaterialCommunityIcons";
 import AWIcon from "react-native-vector-icons/FontAwesome";
-import { formatDate, generatePdf} from "../functions/AddCustService";
+import { formatDate, sharePdf, savePdf } from "../functions/AddCustService";
+import * as FileSystem from "expo-file-system";
 import {
   measurementsInitialState,
   inputFields,
   pickerSelection,
   costLookup,
 } from "../Constants";
+import * as ImagePicker from "expo-image-picker";
 import AddCustTextInput from "../common/AddCustTextInput";
 
 const AddCustomer = () => {
@@ -52,13 +55,37 @@ const AddCustomer = () => {
   const [cost, setCost] = React.useState("");
   const [advance, setAdvance] = React.useState("");
   const [balance, setBalance] = React.useState(0);
-
-  const [measurements, setMeasurements] = React.useState({
-    measurementsInitialState,
-  });
+  const [images, setImages] = React.useState([]);
+  const [measurements, setMeasurements] = React.useState(
+    measurementsInitialState
+  );
 
   const [show, setShow] = React.useState(false);
   const [tableData, setTableData] = React.useState([]);
+
+  const constructFinalData = async () => {
+    const finalObject = {
+      customerName: customerName,
+      customerMobileNumber: customerMobileNumber,
+      orderDate: orderDate,
+      deliveryDate: deliveryDate,
+      checked: checked,
+      totalOrderValue: totalOrderValue,
+      measurements: measurements,
+      tableData: tableData,
+      advance: advance,
+      balance: balance,
+      images: images,
+      isFabric: images.length > 0,
+    };
+
+    sharePdf(finalObject);
+  };
+
+  const removeImage = (index) => {
+    const updatedImages = images.filter((_, i) => i !== index);
+    setImages(updatedImages);
+  };
 
   const handleAdvance = (advance) => {
     setAdvance(advance);
@@ -131,6 +158,37 @@ const AddCustomer = () => {
         </TouchableOpacity>
       </View>
     );
+  };
+
+  const handleCamera = async () => {
+    const { status: cameraStatus } =
+      await ImagePicker.requestCameraPermissionsAsync();
+    const { status: mediaLibraryStatus } =
+      await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (cameraStatus === "granted" && mediaLibraryStatus === "granted") {
+      const result = await ImagePicker.launchCameraAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Images,
+        allowsEditing: false,
+        quality: 1,
+      });
+
+      if (!result.canceled) {
+        const base64Image = await FileSystem.readAsStringAsync(
+          result.assets[0].uri,
+          {
+            encoding: FileSystem.EncodingType.Base64,
+          }
+        );
+
+        setImages([...images, `data:image/jpeg;base64,${base64Image}`]);
+
+        Alert.alert("Picture taken!");
+      } else {
+        Alert.alert("Camera Canceled");
+      }
+    } else {
+      Alert.alert("Permission to access camera and media library is required!");
+    }
   };
 
   const handleSelectedItemEdit = (item) => {
@@ -206,13 +264,16 @@ const AddCustomer = () => {
       }
     }
   };
-
-  const handleInputChange = (name, value) => {
-    setMeasurements((prevState) => ({
-      ...prevState,
-      [name]: value,
-    }));
-  };
+  
+const handleInputChange = (input, text) => {
+  setMeasurements(prevMeasurements =>
+    prevMeasurements.map(m =>
+      m.name === input.name
+        ? { ...m, value: text, label: input.label }
+        : m
+    )
+  );
+};
 
   return (
     <KeyboardAvoidingView
@@ -221,6 +282,7 @@ const AddCustomer = () => {
       style={styles.container}
     >
       <ScrollView
+        nestedScrollEnabled={true}
         automaticallyAdjustKeyboardInsets={true}
         contentContainerStyle={styles.scrollViewContent}
       >
@@ -347,16 +409,18 @@ const AddCustomer = () => {
           </Text>
         </View>
         <View style={styles.measurementContainer}>
-          {inputFields.map((input, index) => (
-            <AddCustTextInput
-              key={index}
-              label={input.label}
-              value={measurements[input.name]}
-              maxLength={input.maxLength}
-              keyboardType={input.keyboardType}
-              onChange={(text) => handleInputChange(input.name, text)}
-            />
-          ))}
+          {inputFields.map((input, index) => {
+            return (
+              <AddCustTextInput
+                key={index}
+                label={input.label}
+                value={measurements.find(m => m.name === input.name)?.value || ''}
+                maxLength={input.maxLength}
+                keyboardType={input.keyboardType}
+                onChange={(text) => handleInputChange(input, text)}
+              />
+            );
+          })}
         </View>
         <Divider style={{ width: "90%", alignSelf: "center", margin: 0 }} />
         <View style={{ padding: 16, width: "100%" }}>
@@ -606,14 +670,18 @@ const AddCustomer = () => {
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "space-between",
+              justifyContent: "center",
               alignSelf: "center",
               marginTop: 15,
+              alignItems: "center",
               width: "100%",
             }}
           >
-            <View style={styles.camContainer}>
-              <CamIcon name="camera" size={28} color="#C2CCD3" />
+            <TouchableOpacity
+              onPress={() => handleCamera()}
+              style={styles.camContainer}
+            >
+              <CamIcon name="camera-plus" size={28} color="#C2CCD3" />
               <Text
                 style={{
                   fontWeight: "bold",
@@ -624,30 +692,78 @@ const AddCustomer = () => {
               >
                 Add Fabric
               </Text>
-            </View>
-          </View>
-          <View
-            style={{
-              alignSelf: "center",
-              width: "100%",
-              marginTop: 20,
-              flexDirection: "column-reverse",
-              gap: 10,
-            }}
-          >
-            <Button
-              style={{
-                width: "80%",
-                alignSelf: "center",
-                backgroundColor: "#21ba45",
-              }}
-              mode="contained"
-              onPress={() => generatePdf()}
-            >
-              Generate
-            </Button>
+            </TouchableOpacity>
           </View>
         </View>
+        <View style={styles.containerImage}>
+          {images.map((image, index) => (
+            <View key={index} style={styles.imageContainer}>
+              <Image
+                resizeMethod="resize"
+                source={{ uri: image }}
+                style={styles.image}
+              />
+              <TouchableOpacity
+                onPress={() => removeImage(index)}
+                style={styles.cancelButton}
+              >
+                <Text style={styles.cancelText}>X</Text>
+              </TouchableOpacity>
+            </View>
+          ))}
+        </View>
+        <View
+          style={{
+            alignSelf: "center",
+            width: "100%",
+            marginTop: 20,
+            flexDirection: "column-reverse",
+            gap: 10,
+          }}
+        >
+          <Button
+            style={{
+              width: "80%",
+              alignSelf: "center",
+              backgroundColor: "#21ba45",
+            }}
+            mode="contained"
+            onPress={() => constructFinalData()}
+          >
+            Share
+          </Button>
+        </View>
+        <View
+          style={{
+            alignSelf: "center",
+            width: "100%",
+            marginTop: 20,
+            flexDirection: "column-reverse",
+            gap: 10,
+          }}
+        >
+          <Button
+            style={{
+              width: "80%",
+              alignSelf: "center",
+              backgroundColor: "#3E525F",
+            }}
+            mode="contained"
+            onPress={() => savePdf()}
+          >
+            Save
+          </Button>
+        </View>
+        <View
+          style={{
+            alignSelf: "center",
+            width: "100%",
+            marginTop: 20,
+            marginBottom: 20,
+            flexDirection: "column-reverse",
+            gap: 10,
+          }}
+        ></View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -765,11 +881,44 @@ const styles = StyleSheet.create({
     alignItems: "center",
     backgroundColor: "#1F4E67",
     padding: 20,
+    alignSelf: "center",
     height: 85,
     width: 150,
     borderRadius: 20,
     borderWidth: 2,
     borderColor: "#C2CCD3",
+  },
+  imageList: {
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  imageContainer: {
+    margin: 6,
+    justifyContent: "space-between",
+    position: "relative",
+  },
+  image: {
+    width: 150,
+    height: 150,
+    borderRadius: 10,
+  },
+  cancelButton: {
+    position: "absolute",
+    top: 5,
+    right: 5,
+    borderRadius: 15,
+    padding: 5,
+  },
+  cancelText: {
+    color: "white",
+    fontWeight: "bold",
+  },
+  containerImage: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    justifyContent: "space-between",
+    justifyContent: "center",
+    alignItems: "center",
   },
 });
 
