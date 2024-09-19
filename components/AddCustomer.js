@@ -1,4 +1,4 @@
-import React from "react";
+import React, { useCallback, useRef, useEffect } from "react";
 import {
   StyleSheet,
   KeyboardAvoidingView,
@@ -11,15 +11,18 @@ import {
   Modal,
   SafeAreaView,
   Alert,
+  ToastAndroid,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import { Picker } from "@react-native-picker/picker";
 import {
   TextInput,
+  HelperText,
   RadioButton,
   Text,
   Divider,
   Button,
+  Checkbox,
 } from "react-native-paper";
 import InputSpinner from "react-native-input-spinner";
 import Icon from "react-native-vector-icons/MaterialIcons";
@@ -34,9 +37,43 @@ import {
   costLookup,
 } from "../Constants";
 import * as ImagePicker from "expo-image-picker";
+import * as ImageManipulator from "expo-image-manipulator";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import AddCustTextInput from "../common/AddCustTextInput";
+import { useFocusEffect, useNavigation } from "@react-navigation/native";
 
 const AddCustomer = () => {
+  const scrollViewRef = useRef(null);
+  const customerNameRef = useRef(null);
+  const customerMobileNumberRef = useRef(null);
+
+  const navigation = useNavigation();
+  const [title, setTitle] = React.useState("");
+
+  useFocusEffect(
+    useCallback(() => {
+      const fetchTitle = async () => {
+        try {
+          const orderNumberString = await AsyncStorage.getItem("orderNumber");
+          if (orderNumberString) {
+            const orderNumber = JSON.parse(orderNumberString);
+            setTitle(`Order No : ${orderNumber}`);
+          }
+        } catch (error) {
+          console.error("Failed to load title from AsyncStorage:", error);
+        }
+      };
+
+      fetchTitle();
+    }, [])
+  );
+
+  useEffect(() => {
+    navigation.setOptions({
+      headerTitle: title,
+    });
+  }, [navigation, title]);
+
   const [customerName, setcustomerName] = React.useState("");
   const [customerMobileNumber, setcustomerMobileNumber] = React.useState("");
   const [orderDate, setOrderDate] = React.useState("");
@@ -47,6 +84,56 @@ const AddCustomer = () => {
   const [modalVisible, setModalVisible] = React.useState(false);
   const [spinnerValue, setSpinnerValue] = React.useState(1);
   const [totalOrderValue, setTotalOrderValue] = React.useState("0");
+
+  const [checkedCash, setCheckedCash] = React.useState(false);
+  const [checkedUPI, setCheckedUPI] = React.useState(false);
+  const [checkedCreditCard, setCheckedCreditCard] = React.useState(false);
+
+  const [errors, setErrors] = React.useState({
+    nameError: "",
+    mobileError: "",
+  });
+
+  const validateFields = () => {
+    let isValid = true;
+    let nameError = "";
+    let mobileError = "";
+
+    if (!customerName.trim()) {
+      nameError = "Customer name cannot be empty";
+      isValid = false;
+    }
+
+    const mobileRegex = /^[0-9]{10}$/;
+    if (!mobileRegex.test(customerMobileNumber)) {
+      mobileError = "Mobile number must be 10 digits";
+      isValid = false;
+    }
+
+    setErrors({ nameError, mobileError });
+
+    if (!isValid) {
+      if (nameError && scrollViewRef.current && customerNameRef.current) {
+        scrollViewRef.current.scrollTo({
+          y: customerNameRef.current.y,
+          animated: true,
+        });
+        customerNameRef.current.focus();
+      } else if (
+        mobileError &&
+        scrollViewRef.current &&
+        customerMobileNumberRef.current
+      ) {
+        scrollViewRef.current.scrollTo({
+          y: customerMobileNumberRef.current.y,
+          animated: true,
+        });
+        customerMobileNumberRef.current.focus();
+      }
+    }
+
+    return isValid;
+  };
 
   const [editselectedValue, setEditSelectedValue] = React.useState(
     pickerSelection[0]
@@ -63,23 +150,32 @@ const AddCustomer = () => {
   const [show, setShow] = React.useState(false);
   const [tableData, setTableData] = React.useState([]);
 
-  const constructFinalData = async () => {
-    const finalObject = {
-      customerName: customerName,
-      customerMobileNumber: customerMobileNumber,
-      orderDate: orderDate,
-      deliveryDate: deliveryDate,
-      checked: checked,
-      totalOrderValue: totalOrderValue,
-      measurements: measurements,
-      tableData: tableData,
-      advance: advance,
-      balance: balance,
-      images: images,
-      isFabric: images.length > 0,
-    };
+  const submitPdf = async (type) => {
+    if (validateFields()) {
+      const data = {
+        customerName: customerName,
+        customerMobileNumber: customerMobileNumber,
+        orderDate: orderDate,
+        deliveryDate: deliveryDate,
+        checked: checked,
+        totalOrderValue: totalOrderValue,
+        measurements: measurements,
+        tableData: tableData,
+        advance: advance,
+        balance: balance,
+        isCash: checkedCash,
+        isCreditCard: checkedCreditCard,
+        isUPI: checkedUPI,
+        images: images,
+        isFabric: images.length > 0,
+      };
 
-    sharePdf(finalObject);
+      if (type === "share") {
+        sharePdf(data);
+      } else {
+        savePdf(data);
+      }
+    }
   };
 
   const removeImage = (index) => {
@@ -169,22 +265,39 @@ const AddCustomer = () => {
       const result = await ImagePicker.launchCameraAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
         allowsEditing: false,
-        quality: 1,
+        quality: 0.7,
       });
 
       if (!result.canceled) {
-        const base64Image = await FileSystem.readAsStringAsync(
+        ToastAndroid.showWithGravityAndOffset(
+          "Image Loading...",
+          ToastAndroid.SHORT,
+          ToastAndroid.BOTTOM,
+          25,
+          50
+        );
+
+        const compressedImage = await ImageManipulator.manipulateAsync(
           result.assets[0].uri,
+          [{ resize: { width: 800 } }],
+          { compress: 0.6, format: ImageManipulator.SaveFormat.WEBP }
+        );
+
+        const base64Image = await FileSystem.readAsStringAsync(
+          compressedImage.uri,
           {
             encoding: FileSystem.EncodingType.Base64,
           }
         );
-
-        setImages([...images, `data:image/jpeg;base64,${base64Image}`]);
-
-        Alert.alert("Picture taken!");
+        setImages([...images, `data:image/webp;base64,${base64Image}`]);
       } else {
-        Alert.alert("Camera Canceled");
+        ToastAndroid.showWithGravityAndOffset(
+          "Camera Cancelled",
+          ToastAndroid.SHORT,
+          ToastAndroid.BOTTOM,
+          25,
+          50
+        );
       }
     } else {
       Alert.alert("Permission to access camera and media library is required!");
@@ -248,6 +361,12 @@ const AddCustomer = () => {
     setShow(true);
   };
 
+  const compareDates = (orderDate, deliveryDate) => {
+    const order = new Date(orderDate);
+    const delivery = new Date(deliveryDate);
+    return delivery >= order;
+  };
+
   const onDateChange = (event, selectedDate) => {
     setShow(false);
 
@@ -260,20 +379,25 @@ const AddCustomer = () => {
       if (datePickerType === "orderDate") {
         setOrderDate(formattedDate);
       } else if (datePickerType === "deliveryDate") {
+        if (!compareDates(orderDate, formattedDate)) {
+          Alert.alert(
+            "Invalid Date",
+            "Delivery date cannot be earlier than the order date."
+          );
+          return;
+        }
         setDeliveryDate(formattedDate);
       }
     }
   };
-  
-const handleInputChange = (input, text) => {
-  setMeasurements(prevMeasurements =>
-    prevMeasurements.map(m =>
-      m.name === input.name
-        ? { ...m, value: text, label: input.label }
-        : m
-    )
-  );
-};
+
+  const handleInputChange = (input, text) => {
+    setMeasurements((prevMeasurements) =>
+      prevMeasurements.map((m) =>
+        m.name === input.name ? { ...m, value: text, label: input.label } : m
+      )
+    );
+  };
 
   return (
     <KeyboardAvoidingView
@@ -282,6 +406,7 @@ const handleInputChange = (input, text) => {
       style={styles.container}
     >
       <ScrollView
+        ref={scrollViewRef}
         nestedScrollEnabled={true}
         automaticallyAdjustKeyboardInsets={true}
         contentContainerStyle={styles.scrollViewContent}
@@ -290,13 +415,21 @@ const handleInputChange = (input, text) => {
           label="Customer Name"
           value={customerName}
           maxLength={50}
+          ref={customerNameRef}
           theme={{ colors: { primary: "#1F4E67" } }}
           style={{ alignSelf: "center", width: "90%", margin: 10 }}
           onChangeText={(customerName) => setcustomerName(customerName)}
+          error={!!errors.nameError}
         />
+        <HelperText type="error" visible={!!errors.nameError}>
+          <Text style={{ fontWeight: "bold", color: "red" }}>
+            {errors.nameError}
+          </Text>
+        </HelperText>
         <TextInput
           label="Customer Mobile Number"
           value={customerMobileNumber}
+          ref={customerMobileNumberRef}
           maxLength={10}
           theme={{ colors: { primary: "#1F4E67" } }}
           style={{ alignSelf: "center", width: "90%", margin: 10 }}
@@ -304,7 +437,13 @@ const handleInputChange = (input, text) => {
           onChangeText={(customerMobileNumber) =>
             setcustomerMobileNumber(customerMobileNumber)
           }
+          error={!!errors.mobileError}
         />
+        <HelperText type="error" visible={!!errors.mobileError}>
+          <Text style={{ fontWeight: "bold", color: "red" }}>
+            {errors.mobileError}
+          </Text>
+        </HelperText>
         <View style={styles.dateContainer}>
           <TextInput
             label="Ordered Date"
@@ -414,7 +553,9 @@ const handleInputChange = (input, text) => {
               <AddCustTextInput
                 key={index}
                 label={input.label}
-                value={measurements.find(m => m.name === input.name)?.value || ''}
+                value={
+                  measurements.find((m) => m.name === input.name)?.value || ""
+                }
                 maxLength={input.maxLength}
                 keyboardType={input.keyboardType}
                 onChange={(text) => handleInputChange(input, text)}
@@ -648,6 +789,7 @@ const handleInputChange = (input, text) => {
               }}
               keyboardType="phone-pad"
               onChangeText={(advance) => handleAdvance(advance)}
+              editable={totalOrderValue > 0}
             />
           </View>
           <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
@@ -667,6 +809,62 @@ const handleInputChange = (input, text) => {
             >{`Rs.${balance}`}</Text>
           </View>
           <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
+          <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+            Select Payment Method:
+          </Text>
+          <View style={{ padding: 0 }}>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-between",
+                marginTop: 10,
+              }}
+            >
+              <View style={{ flexDirection: "row", alignItems: "center" }}>
+                <Checkbox
+                  status={checkedCash ? "checked" : "unchecked"}
+                  onPress={() => setCheckedCash(!checkedCash)}
+                  color="#E1D9D1"
+                  uncheckedColor="#E1D9D1"
+                />
+                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>Cash</Text>
+              </View>
+
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: 10,
+                }}
+              >
+                <Checkbox
+                  status={checkedUPI ? "checked" : "unchecked"}
+                  onPress={() => setCheckedUPI(!checkedUPI)}
+                  color="#E1D9D1"
+                  uncheckedColor="#E1D9D1"
+                />
+                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>UPI</Text>
+              </View>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  marginLeft: 10,
+                }}
+              >
+                <Checkbox
+                  status={checkedCreditCard ? "checked" : "unchecked"}
+                  onPress={() => setCheckedCreditCard(!checkedCreditCard)}
+                  color="#E1D9D1"
+                  uncheckedColor="#E1D9D1"
+                />
+                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                  Credit Card
+                </Text>
+              </View>
+            </View>
+          </View>
           <View
             style={{
               flexDirection: "row",
@@ -728,7 +926,7 @@ const handleInputChange = (input, text) => {
               backgroundColor: "#21ba45",
             }}
             mode="contained"
-            onPress={() => constructFinalData()}
+            onPress={() => submitPdf("share")}
           >
             Share
           </Button>
@@ -749,7 +947,7 @@ const handleInputChange = (input, text) => {
               backgroundColor: "#3E525F",
             }}
             mode="contained"
-            onPress={() => savePdf()}
+            onPress={() => submitPdf("save")}
           >
             Save
           </Button>

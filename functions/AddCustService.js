@@ -21,7 +21,7 @@ export const formatDate = (date) => {
 };
 
 
-export const savePdf = async () => {
+export const savePdf = async (data) => {
 
   const filename = "dummy2.pdf";
   const storedDirectoryUri = await AsyncStorage.getItem("directoryUri");
@@ -43,9 +43,8 @@ export const savePdf = async () => {
 
   console.log(directoryUri);
 
-
   const { uri } = await Print.printToFileAsync({
-    html: htmlContent,
+    html: generateHtmlContent(data)
   });
 
   const base64 = await FileSystem.readAsStringAsync(uri, {
@@ -109,32 +108,6 @@ export const sharePdf = async (data) => {
 
 function generateHtmlContent(data) {
 
-  const images = [
-    base64Qr,
-    base64Qr,
-    base64Qr,
-    base64Qr,
-  ];
-
-  
-const items = [
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-  { item: "Example Item 1", qty: 1, cost: 10.0 },
-  { item: "Example Item 2", qty: 2, cost: 20.0 },
-];
-
 const rows = [];
 
 const filteredMeasurements = data.measurements.filter(m => m.value.trim() !== "");
@@ -144,23 +117,23 @@ for (let i = 0; i < filteredMeasurements.length; i += 5) {
 }
 
 
-const fabricSection = false
+const fabricSection = data.isFabric
   ? `
     <div style="margin: 0px 60px;">
-      <h3 style="text-align: center; margin-top: 15px; margin-bottom: 29px; color: #1F4E67;">FABRIC</h3>
+      <h3 style="text-align: center; margin-top: 15px; margin-bottom: 40px; color: #1F4E67;">FABRIC</h3>
       <div class="image-gallery">
-        ${images.map(base64 => `<img src="${base64}" />`).join('')}
+        ${data.images.map(base64 => `<img src="${base64}" />`).join('')}
       </div>
     </div>`
   : '';
 
-const itemRows = items
+const itemRows = data.tableData
   .map(
     (i) => `
     <tr style="border: 1px solid black;">
-      <td style="padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.item}</td>
-      <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.qty}</td>
-      <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.cost.toFixed(2)}</td>
+      <td style="padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Item}</td>
+      <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Qty}</td>
+      <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Cost.toFixed(2)}</td>
     </tr>`
   )
   .join("");
@@ -197,8 +170,8 @@ const measurementHtml = rows
          justify-content: center;
          }
          .image-gallery img {
-         width: 150px;
-         height: 150px;
+         width: 170px;
+         height: 170px;
          object-fit: cover;
          }
       </style>
@@ -250,18 +223,20 @@ const measurementHtml = rows
                   ${itemRows}
                   <tr>
                      <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 10px;">Total Order Value</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. 1750</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.totalOrderValue}</td>
                   </tr>
                   <tr>
                      <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 10px;">Advance</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. 1000</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.advance}</td>
                   </tr>
                   <tr>
                      <td colspan="2" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 10px;">Balance</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. 750</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.balance}</td>
                   </tr>
                   <tr>
-                     <td colspan="3" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 10px;">Payment Mode (Cash/UPI/Credit card)</td>
+                     <td colspan="3" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 12px;">
+                       Payment Mode ( ${data.isCash ? '☑' : '☐'} Cash / ${data.isUPI ? '☑' : '☐'} UPI / ${data.isCreditCard ? '☑' : '☐'} Credit Card )
+                     </td>
                   </tr>
                </tbody>
             </table>

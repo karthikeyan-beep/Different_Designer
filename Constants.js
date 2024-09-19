@@ -1,21 +1,3 @@
-// export const measurementsInitialState = {
-//   length: "",
-//   fNeckHt: "",
-//   chest: "",
-//   bNeckHt: "",
-//   shoulder: "",
-//   waistLoose: "",
-//   slvLength: "",
-//   slvRound: "",
-//   fDotPt: "",
-//   midAndRound: "",
-//   upChest: "",
-//   other1: "",
-//   other2: "",
-//   other3: "",
-//   other4: "",
-// };
-
 export const measurementsInitialState = [
   { name: "length", value: "" },
   { name: "frontNeckHT", value: "" },
