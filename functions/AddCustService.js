@@ -20,10 +20,11 @@ export const formatDate = (date) => {
   return `${day}-${month}-${year}`;
 };
 
-
 export const savePdf = async (data) => {
 
-  const filename = "dummy2.pdf";
+  const orderNumber = data.orderNumber?.toString() || "";
+  let customerName = data.customerName.replace(/\s+/g, '_');
+  const filename = `Invoice_${orderNumber}_${customerName}.pdf`;
   const storedDirectoryUri = await AsyncStorage.getItem("directoryUri");
 
   let directoryUri = storedDirectoryUri;
@@ -36,15 +37,13 @@ export const savePdf = async (data) => {
       directoryUri = permissions.directoryUri;
       await AsyncStorage.setItem("directoryUri", directoryUri);
     } else {
-      console.log("Permission not granted");
+      Alert.alert("Permission not granted for folder access");
       return;
     }
   }
 
-  console.log(directoryUri);
-
   const { uri } = await Print.printToFileAsync({
-    html: generateHtmlContent(data)
+    html: generateHtmlContent(data),
   });
 
   const base64 = await FileSystem.readAsStringAsync(uri, {
@@ -61,7 +60,7 @@ export const savePdf = async (data) => {
         encoding: FileSystem.EncodingType.Base64,
       });
     })
-    .catch((e) => console.log(e));
+    .catch(Alert.alert("Something went wrong while saving!!"));
 
   ToastAndroid.showWithGravityAndOffset(
     "Save Success!",
@@ -72,15 +71,15 @@ export const savePdf = async (data) => {
   );
 };
 
-
 export const sharePdf = async (data) => {
   try {
+    const orderNumber = data.orderNumber?.toString() || "";
 
     const { uri } = await Print.printToFileAsync({
-      html: generateHtmlContent(data)
+      html: generateHtmlContent(data),
     });
 
-    const fileUri = `${FileSystem.documentDirectory}sample.pdf`;
+    const fileUri = `${FileSystem.documentDirectory}Invoice_${orderNumber}_${data.customerName}.pdf`;
 
     await FileSystem.moveAsync({
       from: uri,
@@ -90,58 +89,57 @@ export const sharePdf = async (data) => {
     if (await Sharing.isAvailableAsync()) {
       await Sharing.shareAsync(fileUri).then(() => {
         ToastAndroid.showWithGravityAndOffset(
-          'Share Success',
+          "Share Success",
           ToastAndroid.LONG,
           ToastAndroid.BOTTOM,
           25,
-          50,
+          50
         );
       });
     } else {
       Alert.alert("Share Not available");
     }
   } catch (error) {
-    console.error("Error creating PDF:", error);
     Alert.alert("Error", "An error occurred while creating the PDF.");
   }
 };
 
 function generateHtmlContent(data) {
+  const orderNumber = data.orderNumber?.toString() || "";
+  const rows = [];
 
-const rows = [];
+  const filteredMeasurements = data.measurements.filter(
+    (m) => m.value.trim() !== ""
+  );
 
-const filteredMeasurements = data.measurements.filter(m => m.value.trim() !== "");
+  for (let i = 0; i < filteredMeasurements.length; i += 5) {
+    rows.push(filteredMeasurements.slice(i, i + 5));
+  }
 
-for (let i = 0; i < filteredMeasurements.length; i += 5) {
-  rows.push(filteredMeasurements.slice(i, i + 5));
-}
-
-
-const fabricSection = data.isFabric
-  ? `
+  const fabricSection = data.isFabric
+    ? `
     <div style="margin: 0px 60px;">
       <h3 style="text-align: center; margin-top: 15px; margin-bottom: 40px; color: #1F4E67;">FABRIC</h3>
       <div class="image-gallery">
-        ${data.images.map(base64 => `<img src="${base64}" />`).join('')}
+        ${data.images.map((base64) => `<img src="${base64}" />`).join("")}
       </div>
     </div>`
-  : '';
+    : "";
 
-const itemRows = data.tableData
-  .map(
-    (i) => `
+  const itemRows = data.tableData
+    .map(
+      (i) => `
     <tr style="border: 1px solid black;">
       <td style="padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Item}</td>
       <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Qty}</td>
       <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">${i.Cost.toFixed(2)}</td>
     </tr>`
-  )
-  .join("");
+    )
+    .join("");
 
-
-const measurementHtml = rows
-  .map(
-    (row) => `
+  const measurementHtml = rows
+    .map(
+      (row) => `
   <tr>
     ${row
       .map(
@@ -154,9 +152,8 @@ const measurementHtml = rows
       .join("")}
   </tr>
 `
-  )
-  .join("");
-
+    )
+    .join("");
 
   return `
 <html>
@@ -184,7 +181,7 @@ const measurementHtml = rows
          <div style="display: flex; align-items: flex-start;">
             <!-- Left Side Content -->
             <div style="flex: 1; padding-right: 20px;">
-               <p style="font-size: 12px;"><strong>Order No:</strong> 001</p>
+               <p style="font-size: 12px;"><strong>Order No:</strong> ${orderNumber}</p>
                <p style="font-size: 12px;"><strong>Order Date:</strong> ${data.orderDate}</p>
                <p style="font-size: 12px;"><strong>Delivery Date:</strong> ${data.deliveryDate}</p>
                <p style="font-size: 12px;"><strong>Customer Name:</strong> ${data.customerName}</p>
@@ -222,20 +219,20 @@ const measurementHtml = rows
                <tbody >
                   ${itemRows}
                   <tr>
-                     <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 10px;">Total Order Value</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.totalOrderValue}</td>
+                     <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 12px;">Total Order Value</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">Rs. ${data.totalOrderValue}</td>
                   </tr>
                   <tr>
-                     <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 10px;">Advance</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.advance}</td>
+                     <td colspan="2" style="text-align: right; padding: 4px 6px; border: 1px solid black; font-weight: bold; font-size: 12px;">Advance</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">Rs. ${data.advance}</td>
                   </tr>
                   <tr>
-                     <td colspan="2" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 10px;">Balance</td>
-                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 10px;">Rs. ${data.balance}</td>
+                     <td colspan="2" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 12px;">Balance</td>
+                     <td style="text-align: right; padding: 4px 6px; border: 1px solid black; font-size: 12px;">Rs. ${data.balance}</td>
                   </tr>
                   <tr>
                      <td colspan="3" style="text-align: right; padding: 4px 6px; font-weight: bold; border: 1px solid black; font-size: 12px;">
-                       Payment Mode ( ${data.isCash ? '☑' : '☐'} Cash / ${data.isUPI ? '☑' : '☐'} UPI / ${data.isCreditCard ? '☑' : '☐'} Credit Card )
+                       Payment Mode ( ${data.isCash ? "☑" : "☐"} Cash / ${data.isUPI ? "☑" : "☐"} UPI / ${data.isCreditCard ? "☑" : "☐"} Credit Card )
                      </td>
                   </tr>
                </tbody>

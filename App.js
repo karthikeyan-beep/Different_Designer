@@ -1,12 +1,13 @@
 import React, {useEffect} from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
-import Icon from "react-native-vector-icons/AntDesign";
+import Icon from "react-native-vector-icons/FontAwesome";
 import SetIcon from "react-native-vector-icons/Ionicons";
 import Welcome from "./components/Welcome";
 import AddCustomer from "./components/AddCustomer";
 import ViewCustomer from "./components/ViewCustomer";
 import Settings from "./components/Settings";
+import WebViewComp from "./components/WebView";
 import { TouchableOpacity } from "react-native";
 
 const Stack = createNativeStackNavigator();
@@ -34,7 +35,7 @@ export default function App() {
               color: "#C2CCD3",
             },
             headerLeft: () => (
-              <Icon name="dingding-o" size={30} color="black" />
+              <Icon name="scissors" size={30} color="#C2CCD3" />
             ),
           }}
         />
@@ -44,7 +45,6 @@ export default function App() {
           options={({ navigation }) => ({
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
-            //SSSheaderTitle: `Order No :`,
             animation:'slide_from_right',
             headerShadowVisible: false,
             headerRight: () => (
@@ -75,6 +75,16 @@ export default function App() {
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
             headerTitle: 'Settings',
+            animation:'slide_from_right',
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="WebViewComp"
+          component={WebViewComp}
+          options={{
+            headerStyle: { backgroundColor: "#1F4E67" },
+            headerTintColor: "#C2CCD3",
             animation:'slide_from_right',
             headerShadowVisible: false,
           }}

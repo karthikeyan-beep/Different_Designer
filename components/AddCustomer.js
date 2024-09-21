@@ -11,9 +11,11 @@ import {
   Modal,
   SafeAreaView,
   Alert,
+  RefreshControl,
   ToastAndroid,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
+import Spinner from "react-native-loading-spinner-overlay";
 import { Picker } from "@react-native-picker/picker";
 import {
   TextInput,
@@ -46,9 +48,20 @@ const AddCustomer = () => {
   const scrollViewRef = useRef(null);
   const customerNameRef = useRef(null);
   const customerMobileNumberRef = useRef(null);
+  const orderDateRef = useRef(null);
+  const deliveryDateRef = useRef(null);
 
   const navigation = useNavigation();
+  const [refreshing, setRefreshing] = React.useState(false);
   const [title, setTitle] = React.useState("");
+  const [order, setOrder] = React.useState();
+  const [loading, setLoading] = React.useState(true);
+
+  useEffect(() => {
+    const timer = setTimeout(() => setLoading(false), 1000);
+    return () => clearTimeout(timer);
+  }, []);
+
 
   useFocusEffect(
     useCallback(() => {
@@ -58,6 +71,19 @@ const AddCustomer = () => {
           if (orderNumberString) {
             const orderNumber = JSON.parse(orderNumberString);
             setTitle(`Order No : ${orderNumber}`);
+            setOrder(orderNumber);
+          } else {
+            Alert.alert(
+              "Order Number Missing",
+              "Please set the order number in settings.",
+              [
+                {
+                  text: "Go to Settings",
+                  onPress: () => navigation.navigate("Settings"),
+                },
+              ],
+              { cancelable: false }
+            );
           }
         } catch (error) {
           console.error("Failed to load title from AsyncStorage:", error);
@@ -67,7 +93,7 @@ const AddCustomer = () => {
       fetchTitle();
     }, [])
   );
-
+  
   useEffect(() => {
     navigation.setOptions({
       headerTitle: title,
@@ -92,12 +118,16 @@ const AddCustomer = () => {
   const [errors, setErrors] = React.useState({
     nameError: "",
     mobileError: "",
+    orderDateError: "",
+    deliveryDateError: "",
   });
 
   const validateFields = () => {
     let isValid = true;
     let nameError = "";
     let mobileError = "";
+    let orderDateError = "";
+    let deliveryDateError = "";
 
     if (!customerName.trim()) {
       nameError = "Customer name cannot be empty";
@@ -110,7 +140,17 @@ const AddCustomer = () => {
       isValid = false;
     }
 
-    setErrors({ nameError, mobileError });
+    if (!orderDate.trim()) {
+      orderDateError = "Ordered date cannot be empty";
+      isValid = false;
+    }
+
+    if (!deliveryDate.trim()) {
+      deliveryDateError = "Delivery date cannot be empty";
+      isValid = false;
+    }
+
+    setErrors({ nameError, mobileError, orderDateError, deliveryDateError });
 
     if (!isValid) {
       if (nameError && scrollViewRef.current && customerNameRef.current) {
@@ -129,9 +169,42 @@ const AddCustomer = () => {
           animated: true,
         });
         customerMobileNumberRef.current.focus();
+      } else if (
+        orderDateError &&
+        scrollViewRef.current &&
+        orderDateRef.current
+      ) {
+        scrollViewRef.current.scrollTo({
+          y: orderDateRef.current.y,
+          animated: true,
+        });
+        orderDateRef.current.focus();
+        ToastAndroid.showWithGravity(
+          "Ordered Date Missing!",
+          ToastAndroid.LONG,
+          ToastAndroid.CENTER,
+          25,
+          50
+        );
+      } else if (
+        deliveryDateError &&
+        scrollViewRef.current &&
+        deliveryDateRef.current
+      ) {
+        scrollViewRef.current.scrollTo({
+          y: deliveryDateRef.current.y,
+          animated: true,
+        });
+        deliveryDateRef.current.focus();
+        ToastAndroid.showWithGravity(
+          "Delivery Date Missing!",
+          ToastAndroid.LONG,
+          ToastAndroid.CENTER,
+          25,
+          50
+        );
       }
     }
-
     return isValid;
   };
 
@@ -150,10 +223,64 @@ const AddCustomer = () => {
   const [show, setShow] = React.useState(false);
   const [tableData, setTableData] = React.useState([]);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => {
+      setRefreshing(false);
+    }, 2000);
+  };
+
+  const cancelComplete = () => {
+    ToastAndroid.showWithGravityAndOffset(
+      "Next Assignment Cancelled",
+      ToastAndroid.SHORT,
+      ToastAndroid.BOTTOM,
+      25,
+      50
+    );
+  };
+
+  const handleComplition = async () => {
+    try {
+      let increment = Number(order) + 1;
+      await AsyncStorage.setItem("orderNumber", JSON.stringify(increment));
+      navigation.replace("AddCustomer");
+      ToastAndroid.showWithGravityAndOffset(
+        "Order Completion Success ",
+        ToastAndroid.SHORT,
+        ToastAndroid.BOTTOM,
+        25,
+        50
+      );
+    } catch (error) {
+      Alert.alert("Something went wrong!!");
+    }
+  };
+
+  const handleCompleteOrder = async () => {
+    Alert.alert(
+      "Next Order",
+      "This action will refresh the screen and proceed to the next order assignment.",
+      [
+        {
+          text: "Proceed",
+          onPress: () => handleComplition(),
+        },
+        {
+          text: "Cancel",
+          onPress: () => cancelComplete(),
+          style: "cancel",
+        }
+      ],
+      { cancelable: false }
+    );
+  };
+
   const submitPdf = async (type) => {
     if (validateFields()) {
       const data = {
-        customerName: customerName,
+        orderNumber: order,
+        customerName: customerName.trim(),
         customerMobileNumber: customerMobileNumber,
         orderDate: orderDate,
         deliveryDate: deliveryDate,
@@ -169,6 +296,19 @@ const AddCustomer = () => {
         images: images,
         isFabric: images.length > 0,
       };
+
+      if (tableData.length < 1) {
+        Alert.alert("No Item Selected", "Please add at least one item.");
+        return;
+      }
+
+      if (!checkedCash && !checkedCreditCard && !checkedUPI) {
+        Alert.alert(
+          "Payment Method Required",
+          "Please select at least one payment method."
+        );
+        return;
+      }
 
       if (type === "share") {
         sharePdf(data);
@@ -300,7 +440,7 @@ const AddCustomer = () => {
         );
       }
     } else {
-      Alert.alert("Permission to access camera and media library is required!");
+      Alert.alert("Permission to access camera is required!");
     }
   };
 
@@ -405,564 +545,604 @@ const AddCustomer = () => {
       keyboardVerticalOffset={Platform.OS === "ios" ? 0 : -200}
       style={styles.container}
     >
-      <ScrollView
-        ref={scrollViewRef}
-        nestedScrollEnabled={true}
-        automaticallyAdjustKeyboardInsets={true}
-        contentContainerStyle={styles.scrollViewContent}
-      >
-        <TextInput
-          label="Customer Name"
-          value={customerName}
-          maxLength={50}
-          ref={customerNameRef}
-          theme={{ colors: { primary: "#1F4E67" } }}
-          style={{ alignSelf: "center", width: "90%", margin: 10 }}
-          onChangeText={(customerName) => setcustomerName(customerName)}
-          error={!!errors.nameError}
-        />
-        <HelperText type="error" visible={!!errors.nameError}>
-          <Text style={{ fontWeight: "bold", color: "red" }}>
-            {errors.nameError}
-          </Text>
-        </HelperText>
-        <TextInput
-          label="Customer Mobile Number"
-          value={customerMobileNumber}
-          ref={customerMobileNumberRef}
-          maxLength={10}
-          theme={{ colors: { primary: "#1F4E67" } }}
-          style={{ alignSelf: "center", width: "90%", margin: 10 }}
-          keyboardType="phone-pad"
-          onChangeText={(customerMobileNumber) =>
-            setcustomerMobileNumber(customerMobileNumber)
+      <Spinner
+        visible={loading}
+        color="#C2CCD3"
+        textContent={"Loading..."}
+        textStyle={styles.spinnerTextStyle}
+      />
+      {!loading && (
+        <ScrollView
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              colors={["#9Bd35A", "#689F38"]}
+              tintColor="blue"
+            />
           }
-          error={!!errors.mobileError}
-        />
-        <HelperText type="error" visible={!!errors.mobileError}>
-          <Text style={{ fontWeight: "bold", color: "red" }}>
-            {errors.mobileError}
-          </Text>
-        </HelperText>
-        <View style={styles.dateContainer}>
+          ref={scrollViewRef}
+          nestedScrollEnabled={true}
+          automaticallyAdjustKeyboardInsets={true}
+          contentContainerStyle={styles.scrollViewContent}
+        >
           <TextInput
-            label="Ordered Date"
-            value={orderDate}
-            maxLength={10}
+            label="Customer Name"
+            value={customerName}
+            maxLength={50}
+            ref={customerNameRef}
             theme={{ colors: { primary: "#1F4E67" } }}
-            style={styles.dateInput}
-            editable={false}
-            right={
-              <TextInput.Icon
-                icon="calendar"
-                onPress={() => showDatePicker("orderDate")}
-              />
-            }
+            style={{ alignSelf: "center", width: "90%", margin: 10 }}
+            onChangeText={(customerName) => setcustomerName(customerName)}
+            error={!!errors.nameError}
           />
+          <HelperText type="error" visible={!!errors.nameError}>
+            <Text style={{ fontWeight: "bold", color: "red" }}>
+              {errors.nameError}
+            </Text>
+          </HelperText>
           <TextInput
-            label="Delivery Date"
-            value={deliveryDate}
+            label="Customer Mobile Number"
+            value={customerMobileNumber}
+            ref={customerMobileNumberRef}
             maxLength={10}
             theme={{ colors: { primary: "#1F4E67" } }}
-            style={styles.dateInput}
+            style={{ alignSelf: "center", width: "90%", margin: 10 }}
             keyboardType="phone-pad"
-            editable={false}
-            right={
-              <TextInput.Icon
-                icon="calendar"
-                onPress={() => showDatePicker("deliveryDate")}
-              />
+            onChangeText={(customerMobileNumber) =>
+              setcustomerMobileNumber(customerMobileNumber)
             }
+            error={!!errors.mobileError}
           />
-        </View>
-        {show && (
-          <DateTimePicker
-            value={new Date()}
-            mode="date"
-            is24Hour={true}
-            display="default"
-            onChange={onDateChange}
-          />
-        )}
-        <View
-          style={{
-            flexDirection: "row",
-            justifyContent: "space-between",
-            width: "90%",
-            alignSelf: "center",
-            margin: 10,
-          }}
-        >
+          <HelperText type="error" visible={!!errors.mobileError}>
+            <Text style={{ fontWeight: "bold", color: "red" }}>
+              {errors.mobileError}
+            </Text>
+          </HelperText>
+          <View style={styles.dateContainer}>
+            <TextInput
+              ref={orderDateRef}
+              label="Ordered Date"
+              value={orderDate}
+              maxLength={10}
+              theme={{ colors: { primary: "#1F4E67" } }}
+              style={styles.dateInput}
+              editable={false}
+              right={
+                <TextInput.Icon
+                  icon="calendar"
+                  onPress={() => showDatePicker("orderDate")}
+                />
+              }
+            />
+            <TextInput
+              ref={deliveryDateRef}
+              label="Delivery Date"
+              value={deliveryDate}
+              maxLength={10}
+              theme={{ colors: { primary: "#1F4E67" } }}
+              style={styles.dateInput}
+              keyboardType="phone-pad"
+              editable={false}
+              right={
+                <TextInput.Icon
+                  icon="calendar"
+                  onPress={() => showDatePicker("deliveryDate")}
+                />
+              }
+            />
+          </View>
+          {show && (
+            <DateTimePicker
+              value={new Date()}
+              mode="date"
+              is24Hour={true}
+              display="default"
+              onChange={onDateChange}
+            />
+          )}
           <View
             style={{
               flexDirection: "row",
-              alignItems: "center",
-              width: "55%",
-            }}
-          >
-            <RadioButton
-              value="Male"
-              status={checked === "Male" ? "checked" : "unchecked"}
-              onPress={() => setChecked("Male")}
-              color="#C2CCD3"
-              uncheckedColor="#C2CCD3"
-            />
-            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Male</Text>
-          </View>
-
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              width: "50%",
-            }}
-          >
-            <RadioButton
-              value="Female"
-              status={checked === "Female" ? "checked" : "unchecked"}
-              onPress={() => setChecked("Female")}
-              color="#C2CCD3"
-              uncheckedColor="#C2CCD3"
-            />
-            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Female</Text>
-          </View>
-        </View>
-        <View
-          style={{
-            flexDirection: "row",
-            width: "90%",
-            margin: 10,
-            alignSelf: "center",
-          }}
-        >
-          <Text
-            style={{
-              fontWeight: "bold",
-              color: "#C2CCD3",
-              fontSize: 15,
+              justifyContent: "space-between",
+              width: "90%",
               alignSelf: "center",
               margin: 10,
             }}
           >
-            MEASUREMENT
-          </Text>
-        </View>
-        <View style={styles.measurementContainer}>
-          {inputFields.map((input, index) => {
-            return (
-              <AddCustTextInput
-                key={index}
-                label={input.label}
-                value={
-                  measurements.find((m) => m.name === input.name)?.value || ""
-                }
-                maxLength={input.maxLength}
-                keyboardType={input.keyboardType}
-                onChange={(text) => handleInputChange(input, text)}
-              />
-            );
-          })}
-        </View>
-        <Divider style={{ width: "90%", alignSelf: "center", margin: 0 }} />
-        <View style={{ padding: 16, width: "100%" }}>
-          <Text
-            style={{
-              fontSize: 16,
-              marginBottom: 8,
-              alignSelf: "center",
-              fontWeight: "bold",
-              color: "#C2CCD3",
-            }}
-          >
-            Select Item
-          </Text>
-          <Picker
-            mode="dialog"
-            selectedValue={selectedValue}
-            style={{
-              width: "80%",
-              height: 35,
-              marginBottom: 14,
-              backgroundColor: "#C2CCD3",
-              fontWeight: "bold",
-              alignSelf: "center",
-            }}
-            onValueChange={(itemValue) => setSelectedValue(itemValue)}
-          >
-            {pickerSelection.map((item, index) => (
-              <Picker.Item
-                style={{ fontSize: 16, fontWeight: "bold" }}
-                label={item}
-                value={item}
-                key={index}
-              />
-            ))}
-          </Picker>
-          <View
-            style={{
-              flexDirection: "row",
-              alignItems: "center",
-              justifyContent: "space-evenly",
-            }}
-          >
-            <InputSpinner
-              max={100}
-              min={1}
-              skin="square"
-              value={spinnerValue}
-              onChange={(value) => setSpinnerValue(value)}
-              inputStyle={{
-                color: "#1F4E67",
-              }}
-              style={{ width: "45%" }}
-            />
-            <Button
-              textColor="#C2CCD3"
-              mode="outlined"
-              buttonColor="#3E525F"
-              onPress={() => handleTableData()}
-            >
-              Add
-            </Button>
-          </View>
-        </View>
-        <View style={styles.tableContainer}>
-          <View style={styles.header}>
-            <Text style={styles.heading}>Item</Text>
-            <Text style={styles.heading}>Qty</Text>
-            <Text style={styles.heading}>Cost</Text>
-            <Text style={styles.heading}>Edit</Text>
-          </View>
-          <FlatList
-            data={tableData}
-            scrollEnabled={false}
-            keyExtractor={(item) => item.id}
-            renderItem={renderItem}
-          />
-          <Modal
-            transparent={true}
-            visible={modalVisible}
-            onRequestClose={() => setModalVisible(false)}
-          >
-            <SafeAreaView style={styles.modal}>
-              <View style={styles.modalContainer}>
-                <TouchableOpacity onPress={() => setModalVisible(false)}>
-                  <AWIcon
-                    style={{
-                      alignSelf: "flex-end",
-                      marginRight: 5,
-                      marginTop: 5,
-                    }}
-                    name="close"
-                    size={20}
-                    color="#C2CCD3"
-                  />
-                </TouchableOpacity>
-                <View style={styles.modalBodyContainer}>
-                  <Picker
-                    mode="dialog"
-                    selectedValue={editselectedValue}
-                    style={{
-                      width: "80%",
-                      height: 35,
-                      backgroundColor: "#C2CCD3",
-                      fontWeight: "bold",
-                      alignSelf: "center",
-                    }}
-                    enabled={false}
-                    onValueChange={(itemValue) => {
-                      setEditSelectedValue(itemValue);
-                    }}
-                  >
-                    {pickerSelection.map((item, index) => (
-                      <Picker.Item
-                        style={{ fontSize: 16, fontWeight: "bold" }}
-                        label={item}
-                        value={item}
-                        key={index}
-                      />
-                    ))}
-                  </Picker>
-                  <InputSpinner
-                    max={100}
-                    min={1}
-                    skin="square"
-                    value={editspinnerValue}
-                    onChange={(value) => handleSpinnerChange(value)}
-                    inputStyle={{
-                      color: "#1F4E67",
-                    }}
-                    style={{ width: "40%", alignSelf: "center", margin: 10 }}
-                  />
-                  <Text
-                    style={{
-                      alignSelf: "center",
-                      marginTop: 10,
-                      fontWeight: "bold",
-                      color: "#C2CCD3",
-                    }}
-                  >
-                    Cost
-                  </Text>
-                  <TextInput
-                    value={cost}
-                    maxLength={10}
-                    style={{
-                      width: "45%",
-                      alignSelf: "center",
-                      textAlign: "center",
-                      marginTop: 4,
-                    }}
-                    keyboardType="phone-pad"
-                    onChangeText={(cost) => setCost(cost)}
-                  />
-                  <View
-                    style={{
-                      flexDirection: "row",
-                      width: "100%",
-                      justifyContent: "space-around",
-                      marginTop: 20,
-                    }}
-                  >
-                    <Button
-                      mode="contained"
-                      style={{
-                        width: "30%",
-                        backgroundColor: "#21ba45",
-                      }}
-                      onPress={() => handleUpdate()}
-                    >
-                      Update
-                    </Button>
-                    <Button
-                      mode="contained"
-                      style={{
-                        width: "30%",
-                        backgroundColor: "#db2828",
-                      }}
-                      onPress={() => handleDeleteData()}
-                    >
-                      Delete
-                    </Button>
-                  </View>
-                </View>
-              </View>
-            </SafeAreaView>
-          </Modal>
-          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignSelf: "center",
-              width: "100%",
-            }}
-          >
-            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
-              Total Order Value
-            </Text>
-            <Text
-              style={{ fontWeight: "bold", color: "#C2CCD3" }}
-            >{`Rs.${totalOrderValue}`}</Text>
-          </View>
-          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignSelf: "center",
-              width: "100%",
-            }}
-          >
-            <Text
-              style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 9 }}
-            >
-              Advance
-            </Text>
-            <TextInput
-              value={advance}
-              maxLength={10}
-              style={{
-                width: "35%",
-                height: 40,
-                textAlign: "center",
-              }}
-              keyboardType="phone-pad"
-              onChangeText={(advance) => handleAdvance(advance)}
-              editable={totalOrderValue > 0}
-            />
-          </View>
-          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
-          <View
-            style={{
-              flexDirection: "row",
-              justifyContent: "space-between",
-              alignSelf: "center",
-              width: "100%",
-            }}
-          >
-            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
-              Balance
-            </Text>
-            <Text
-              style={{ fontWeight: "bold", color: "#C2CCD3" }}
-            >{`Rs.${balance}`}</Text>
-          </View>
-          <Divider style={{ width: "100%", alignSelf: "center", margin: 8 }} />
-          <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
-            Select Payment Method:
-          </Text>
-          <View style={{ padding: 0 }}>
             <View
               style={{
                 flexDirection: "row",
                 alignItems: "center",
-                justifyContent: "space-between",
-                marginTop: 10,
+                width: "55%",
               }}
             >
-              <View style={{ flexDirection: "row", alignItems: "center" }}>
-                <Checkbox
-                  status={checkedCash ? "checked" : "unchecked"}
-                  onPress={() => setCheckedCash(!checkedCash)}
-                  color="#E1D9D1"
-                  uncheckedColor="#E1D9D1"
-                />
-                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>Cash</Text>
-              </View>
+              <RadioButton
+                value="Male"
+                status={checked === "Male" ? "checked" : "unchecked"}
+                onPress={() => setChecked("Male")}
+                color="#C2CCD3"
+                uncheckedColor="#C2CCD3"
+              />
+              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Male</Text>
+            </View>
 
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: 10,
-                }}
-              >
-                <Checkbox
-                  status={checkedUPI ? "checked" : "unchecked"}
-                  onPress={() => setCheckedUPI(!checkedUPI)}
-                  color="#E1D9D1"
-                  uncheckedColor="#E1D9D1"
-                />
-                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>UPI</Text>
-              </View>
-              <View
-                style={{
-                  flexDirection: "row",
-                  alignItems: "center",
-                  marginLeft: 10,
-                }}
-              >
-                <Checkbox
-                  status={checkedCreditCard ? "checked" : "unchecked"}
-                  onPress={() => setCheckedCreditCard(!checkedCreditCard)}
-                  color="#E1D9D1"
-                  uncheckedColor="#E1D9D1"
-                />
-                <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
-                  Credit Card
-                </Text>
-              </View>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                width: "50%",
+              }}
+            >
+              <RadioButton
+                value="Female"
+                status={checked === "Female" ? "checked" : "unchecked"}
+                onPress={() => setChecked("Female")}
+                color="#C2CCD3"
+                uncheckedColor="#C2CCD3"
+              />
+              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+                Female
+              </Text>
             </View>
           </View>
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "center",
+              width: "90%",
+              margin: 10,
               alignSelf: "center",
-              marginTop: 15,
-              alignItems: "center",
-              width: "100%",
             }}
           >
-            <TouchableOpacity
-              onPress={() => handleCamera()}
-              style={styles.camContainer}
+            <Text
+              style={{
+                fontWeight: "bold",
+                color: "#C2CCD3",
+                fontSize: 15,
+                alignSelf: "center",
+                margin: 10,
+              }}
             >
-              <CamIcon name="camera-plus" size={28} color="#C2CCD3" />
+              MEASUREMENT
+            </Text>
+          </View>
+          <View style={styles.measurementContainer}>
+            {inputFields.map((input, index) => {
+              return (
+                <AddCustTextInput
+                  key={index}
+                  label={input.label}
+                  value={
+                    measurements.find((m) => m.name === input.name)?.value || ""
+                  }
+                  maxLength={input.maxLength}
+                  keyboardType={input.keyboardType}
+                  onChange={(text) => handleInputChange(input, text)}
+                />
+              );
+            })}
+          </View>
+          <Divider style={{ width: "90%", alignSelf: "center", margin: 0 }} />
+          <View style={{ padding: 16, width: "100%" }}>
+            <Text
+              style={{
+                fontSize: 16,
+                marginBottom: 8,
+                alignSelf: "center",
+                fontWeight: "bold",
+                color: "#C2CCD3",
+              }}
+            >
+              Select Item
+            </Text>
+            <Picker
+              mode="dialog"
+              selectedValue={selectedValue}
+              style={{
+                width: "80%",
+                height: 35,
+                marginBottom: 14,
+                backgroundColor: "#C2CCD3",
+                fontWeight: "bold",
+                alignSelf: "center",
+              }}
+              onValueChange={(itemValue) => setSelectedValue(itemValue)}
+            >
+              {pickerSelection.map((item, index) => (
+                <Picker.Item
+                  style={{ fontSize: 16, fontWeight: "bold" }}
+                  label={item}
+                  value={item}
+                  key={index}
+                />
+              ))}
+            </Picker>
+            <View
+              style={{
+                flexDirection: "row",
+                alignItems: "center",
+                justifyContent: "space-evenly",
+              }}
+            >
+              <InputSpinner
+                max={100}
+                min={1}
+                skin="square"
+                value={spinnerValue}
+                onChange={(value) => setSpinnerValue(value)}
+                inputStyle={{
+                  color: "#1F4E67",
+                }}
+                style={{ width: "45%" }}
+              />
+              <Button
+                textColor="#C2CCD3"
+                mode="outlined"
+                buttonColor="#3E525F"
+                onPress={() => handleTableData()}
+              >
+                Add
+              </Button>
+            </View>
+          </View>
+          <View style={styles.tableContainer}>
+            <View style={styles.header}>
+              <Text style={styles.heading}>Item</Text>
+              <Text style={styles.heading}>Qty</Text>
+              <Text style={styles.heading}>Cost</Text>
+              <Text style={styles.heading}>Edit</Text>
+            </View>
+            <FlatList
+              data={tableData}
+              scrollEnabled={false}
+              keyExtractor={(item) => item.id}
+              renderItem={renderItem}
+            />
+            <Modal
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => setModalVisible(false)}
+            >
+              <SafeAreaView style={styles.modal}>
+                <View style={styles.modalContainer}>
+                  <TouchableOpacity onPress={() => setModalVisible(false)}>
+                    <AWIcon
+                      style={{
+                        alignSelf: "flex-end",
+                        marginRight: 5,
+                        marginTop: 5,
+                      }}
+                      name="close"
+                      size={20}
+                      color="#C2CCD3"
+                    />
+                  </TouchableOpacity>
+                  <View style={styles.modalBodyContainer}>
+                    <Picker
+                      mode="dialog"
+                      selectedValue={editselectedValue}
+                      style={{
+                        width: "80%",
+                        height: 35,
+                        backgroundColor: "#C2CCD3",
+                        fontWeight: "bold",
+                        alignSelf: "center",
+                      }}
+                      enabled={false}
+                      onValueChange={(itemValue) => {
+                        setEditSelectedValue(itemValue);
+                      }}
+                    >
+                      {pickerSelection.map((item, index) => (
+                        <Picker.Item
+                          style={{ fontSize: 16, fontWeight: "bold" }}
+                          label={item}
+                          value={item}
+                          key={index}
+                        />
+                      ))}
+                    </Picker>
+                    <InputSpinner
+                      max={100}
+                      min={1}
+                      skin="square"
+                      value={editspinnerValue}
+                      onChange={(value) => handleSpinnerChange(value)}
+                      inputStyle={{
+                        color: "#1F4E67",
+                      }}
+                      style={{ width: "40%", alignSelf: "center", margin: 10 }}
+                    />
+                    <Text
+                      style={{
+                        alignSelf: "center",
+                        marginTop: 10,
+                        fontWeight: "bold",
+                        color: "#C2CCD3",
+                      }}
+                    >
+                      Cost
+                    </Text>
+                    <TextInput
+                      value={cost}
+                      maxLength={10}
+                      style={{
+                        width: "45%",
+                        alignSelf: "center",
+                        textAlign: "center",
+                        marginTop: 4,
+                      }}
+                      keyboardType="phone-pad"
+                      onChangeText={(cost) => setCost(cost)}
+                    />
+                    <View
+                      style={{
+                        flexDirection: "row",
+                        width: "100%",
+                        justifyContent: "space-around",
+                        marginTop: 20,
+                      }}
+                    >
+                      <Button
+                        mode="contained"
+                        style={{
+                          width: "30%",
+                          backgroundColor: "#21ba45",
+                        }}
+                        onPress={() => handleUpdate()}
+                      >
+                        Update
+                      </Button>
+                      <Button
+                        mode="contained"
+                        style={{
+                          width: "30%",
+                          backgroundColor: "#db2828",
+                        }}
+                        onPress={() => handleDeleteData()}
+                      >
+                        Delete
+                      </Button>
+                    </View>
+                  </View>
+                </View>
+              </SafeAreaView>
+            </Modal>
+            <Divider
+              style={{ width: "100%", alignSelf: "center", margin: 8 }}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignSelf: "center",
+                width: "100%",
+              }}
+            >
+              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+                Total Order Value
+              </Text>
               <Text
+                style={{ fontWeight: "bold", color: "#C2CCD3" }}
+              >{`Rs.${totalOrderValue}`}</Text>
+            </View>
+            <Divider
+              style={{ width: "100%", alignSelf: "center", margin: 8 }}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignSelf: "center",
+                width: "100%",
+              }}
+            >
+              <Text
+                style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 9 }}
+              >
+                Advance
+              </Text>
+              <TextInput
+                value={advance}
+                maxLength={10}
                 style={{
-                  fontWeight: "bold",
-                  fontSize: 12,
-                  color: "#C2CCD3",
-                  padding: 8,
+                  width: "35%",
+                  height: 40,
+                  textAlign: "center",
+                }}
+                keyboardType="phone-pad"
+                onChangeText={(advance) => handleAdvance(advance)}
+                editable={totalOrderValue > 0}
+              />
+            </View>
+            <Divider
+              style={{ width: "100%", alignSelf: "center", margin: 8 }}
+            />
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "space-between",
+                alignSelf: "center",
+                width: "100%",
+              }}
+            >
+              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+                Balance
+              </Text>
+              <Text
+                style={{ fontWeight: "bold", color: "#C2CCD3" }}
+              >{`Rs.${balance}`}</Text>
+            </View>
+            <Divider
+              style={{ width: "100%", alignSelf: "center", margin: 8 }}
+            />
+            <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
+              Select Payment Method
+            </Text>
+            <View style={{ padding: 0 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: 10,
                 }}
               >
-                Add Fabric
-              </Text>
-            </TouchableOpacity>
-          </View>
-        </View>
-        <View style={styles.containerImage}>
-          {images.map((image, index) => (
-            <View key={index} style={styles.imageContainer}>
-              <Image
-                resizeMethod="resize"
-                source={{ uri: image }}
-                style={styles.image}
-              />
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Checkbox
+                    status={checkedCash ? "checked" : "unchecked"}
+                    onPress={() => setCheckedCash(!checkedCash)}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>Cash</Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginLeft: 10,
+                  }}
+                >
+                  <Checkbox
+                    status={checkedUPI ? "checked" : "unchecked"}
+                    onPress={() => setCheckedUPI(!checkedUPI)}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>UPI</Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginLeft: 10,
+                  }}
+                >
+                  <Checkbox
+                    status={checkedCreditCard ? "checked" : "unchecked"}
+                    onPress={() => setCheckedCreditCard(!checkedCreditCard)}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Credit Card
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <View
+              style={{
+                flexDirection: "row",
+                justifyContent: "center",
+                alignSelf: "center",
+                marginTop: 15,
+                alignItems: "center",
+                width: "100%",
+              }}
+            >
               <TouchableOpacity
-                onPress={() => removeImage(index)}
-                style={styles.cancelButton}
+                onPress={() => handleCamera()}
+                style={styles.camContainer}
               >
-                <Text style={styles.cancelText}>X</Text>
+                <CamIcon name="camera-plus" size={28} color="#C2CCD3" />
+                <Text
+                  style={{
+                    fontWeight: "bold",
+                    fontSize: 12,
+                    color: "#C2CCD3",
+                    padding: 8,
+                  }}
+                >
+                  Add Fabric
+                </Text>
               </TouchableOpacity>
             </View>
-          ))}
-        </View>
-        <View
-          style={{
-            alignSelf: "center",
-            width: "100%",
-            marginTop: 20,
-            flexDirection: "column-reverse",
-            gap: 10,
-          }}
-        >
-          <Button
+          </View>
+          <View style={styles.containerImage}>
+            {images.map((image, index) => (
+              <View key={index} style={styles.imageContainer}>
+                <Image
+                  resizeMethod="resize"
+                  source={{ uri: image }}
+                  style={styles.image}
+                />
+                <TouchableOpacity
+                  onPress={() => removeImage(index)}
+                  style={styles.cancelButton}
+                >
+                  <Text style={styles.cancelText}>X</Text>
+                </TouchableOpacity>
+              </View>
+            ))}
+          </View>
+          <View
             style={{
-              width: "80%",
               alignSelf: "center",
-              backgroundColor: "#21ba45",
+              width: "100%",
+              marginTop: 10,
+              flexDirection: "column-reverse",
+              gap: 10,
             }}
-            mode="contained"
-            onPress={() => submitPdf("share")}
           >
-            Share
-          </Button>
-        </View>
-        <View
-          style={{
-            alignSelf: "center",
-            width: "100%",
-            marginTop: 20,
-            flexDirection: "column-reverse",
-            gap: 10,
-          }}
-        >
-          <Button
+            <Button
+              style={{
+                width: "80%",
+                alignSelf: "center",
+                backgroundColor: "#21ba45",
+              }}
+              mode="contained"
+              onPress={() => submitPdf("share")}
+            >
+              Share
+            </Button>
+          </View>
+          <View
             style={{
-              width: "80%",
               alignSelf: "center",
-              backgroundColor: "#3E525F",
+              width: "100%",
+              marginTop: 10,
+              flexDirection: "column-reverse",
+              gap: 10,
             }}
-            mode="contained"
-            onPress={() => submitPdf("save")}
           >
-            Save
-          </Button>
-        </View>
-        <View
-          style={{
-            alignSelf: "center",
-            width: "100%",
-            marginTop: 20,
-            marginBottom: 20,
-            flexDirection: "column-reverse",
-            gap: 10,
-          }}
-        ></View>
-      </ScrollView>
+            <Button
+              style={{
+                width: "80%",
+                alignSelf: "center",
+                backgroundColor: "#3E525F",
+              }}
+              mode="contained"
+              onPress={() => submitPdf("save")}
+            >
+              Save
+            </Button>
+          </View>
+          <View
+            style={{
+              alignSelf: "center",
+              width: "100%",
+              marginTop: 10,
+              marginBottom: 20,
+              flexDirection: "column-reverse",
+              gap: 10,
+            }}
+          >
+            <Button
+              style={{
+                width: "80%",
+                alignSelf: "center",
+                backgroundColor: "#239ED0",
+              }}
+              mode="contained"
+              onPress={() => handleCompleteOrder("save")}
+            >
+              Next Order
+            </Button>
+          </View>
+        </ScrollView>
+      )}
     </KeyboardAvoidingView>
   );
 };
@@ -1117,6 +1297,9 @@ const styles = StyleSheet.create({
     justifyContent: "space-between",
     justifyContent: "center",
     alignItems: "center",
+  },
+  spinnerTextStyle: {
+    color: "#C2CCD3",
   },
 });
 

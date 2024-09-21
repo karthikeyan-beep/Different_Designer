@@ -13,7 +13,6 @@ const Settings = () => {
   const handlePress = () => setExpanded(!expanded);
 
   const handleOrderNumber = async () => {
-
     if (orderNumber === null || orderNumber.trim() === "") {
       alert("Please enter a valid order number");
       return;
@@ -34,7 +33,6 @@ const Settings = () => {
       alert("Failed to save the order number");
     }
   };
-
 
   return (
     <View style={styles.container}>
@@ -70,6 +68,7 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     padding: 16,
+    gap: 8,
     backgroundColor: "#1F4E67",
   },
   accordion: {
