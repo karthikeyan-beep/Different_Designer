@@ -1,8 +1,8 @@
 {
   "expo": {
     "name": "Different Designer",
-    "slug": "Different Designer",
-    "version": "1.0.0",
+    "slug": "Different_Designer",
+    "version": "3.0.0",
     "orientation": "portrait",
     "icon": "./assets/appIcon.png",
     "userInterfaceStyle": "light",
@@ -15,7 +15,7 @@
       "supportsTablet": true
     },
     "android": {
-      "permissions":[
+      "permissions": [
         "android.permission.READ_EXTERNAL_STORAGE",
         "android.permission.WRITE_EXTERNAL_STORAGE",
         "android.permission.DOWNLOAD_WITHOUT_NOTIFICATION",
@@ -26,13 +26,22 @@
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"
-      }
+      },
+      "package": "com.karthikeyan1995.Different_Designer"
+    },
+    "androidStatusBar": {
+      "translucent": true
     },
     "web": {
       "favicon": "./assets/favicon.png"
     },
     "plugins": [
       "./remove-permissions-plugin"
-    ]
+    ],
+    "extra": {
+      "eas": {
+        "projectId": "66ea3702-2a78-4dfe-bfd2-b229e266160b"
+      }
+    }
   }
 }

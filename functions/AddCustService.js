@@ -60,7 +60,7 @@ export const savePdf = async (data) => {
         encoding: FileSystem.EncodingType.Base64,
       });
     })
-    .catch(Alert.alert("Something went wrong while saving!!"));
+    .catch();
 
   ToastAndroid.showWithGravityAndOffset(
     "Save Success!",

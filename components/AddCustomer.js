@@ -13,6 +13,7 @@ import {
   Alert,
   RefreshControl,
   ToastAndroid,
+  ActivityIndicator
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -56,6 +57,9 @@ const AddCustomer = () => {
   const [title, setTitle] = React.useState("");
   const [order, setOrder] = React.useState();
   const [loading, setLoading] = React.useState(true);
+
+  const [isLoadingShare, setIsLoadingShare] = React.useState(false);
+  const [isLoadingSave, setIsLoadingSave] = React.useState(false);
 
   useEffect(() => {
     const timer = setTimeout(() => setLoading(false), 1000);
@@ -311,9 +315,13 @@ const AddCustomer = () => {
       }
 
       if (type === "share") {
+        setIsLoadingShare(true);
         sharePdf(data);
+        setIsLoadingShare(false); 
       } else {
+        setIsLoadingSave(true)
         savePdf(data);
+        setIsLoadingSave(false);
       }
     }
   };
@@ -1086,17 +1094,21 @@ const AddCustomer = () => {
               gap: 10,
             }}
           >
-            <Button
-              style={{
-                width: "80%",
-                alignSelf: "center",
-                backgroundColor: "#21ba45",
-              }}
-              mode="contained"
-              onPress={() => submitPdf("share")}
-            >
-              Share
-            </Button>
+            {isLoadingShare ? (
+              <ActivityIndicator size="large" color="#21ba45" />
+            ) : (
+              <Button
+                style={{
+                  width: "80%",
+                  alignSelf: "center",
+                  backgroundColor: "#21ba45",
+                }}
+                mode="contained"
+                onPress={() => submitPdf("share")}
+              >
+                Share
+              </Button>
+            )}
           </View>
           <View
             style={{
@@ -1107,17 +1119,21 @@ const AddCustomer = () => {
               gap: 10,
             }}
           >
-            <Button
-              style={{
-                width: "80%",
-                alignSelf: "center",
-                backgroundColor: "#3E525F",
-              }}
-              mode="contained"
-              onPress={() => submitPdf("save")}
-            >
-              Save
-            </Button>
+            {isLoadingSave ? (
+              <ActivityIndicator size="large" color="red" />
+            ) : (
+              <Button
+                style={{
+                  width: "80%",
+                  alignSelf: "center",
+                  backgroundColor: "#3E525F",
+                }}
+                mode="contained"
+                onPress={() => submitPdf("save")}
+              >
+                Save
+              </Button>
+            )}
           </View>
           <View
             style={{
