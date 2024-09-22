@@ -1,4 +1,4 @@
-import React, {useEffect} from "react";
+import React from "react";
 import { NavigationContainer } from "@react-navigation/native";
 import { createNativeStackNavigator } from "@react-navigation/native-stack";
 import Icon from "react-native-vector-icons/FontAwesome";
@@ -8,13 +8,15 @@ import AddCustomer from "./components/AddCustomer";
 import ViewCustomer from "./components/ViewCustomer";
 import Settings from "./components/Settings";
 import WebViewComp from "./components/WebView";
-import { TouchableOpacity } from "react-native";
+import { StatusBar, TouchableOpacity } from "react-native";
 
 const Stack = createNativeStackNavigator();
 
 export default function App() {
   
   return (
+    <>
+    <StatusBar animated={true} backgroundColor="#1F4E67"/>
     <NavigationContainer>
       <Stack.Navigator
         initialRouteName="Welcome"
@@ -91,5 +93,6 @@ export default function App() {
         />
       </Stack.Navigator>
     </NavigationContainer>
+    </>
   );
 }

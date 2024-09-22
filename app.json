@@ -2,7 +2,7 @@
   "expo": {
     "name": "Different Designer",
     "slug": "Different_Designer",
-    "version": "3.0.0",
+    "version": "4.0.1",
     "orientation": "portrait",
     "icon": "./assets/appIcon.png",
     "userInterfaceStyle": "light",
@@ -24,7 +24,7 @@
       ],
       "softwareKeyboardLayoutMode": "pan",
       "adaptiveIcon": {
-        "foregroundImage": "./assets/adaptive-icon.png",
+        "foregroundImage": "./assets/appIcon.png",
         "backgroundColor": "#ffffff"
       },
       "package": "com.karthikeyan1995.Different_Designer"
