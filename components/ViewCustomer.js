@@ -57,8 +57,7 @@ const ViewCustomer = () => {
       return;
     }
     if (dir) {
-      const files =
-        await FileSystem.StorageAccessFramework.readDirectoryAsync(dir);
+      const files = await FileSystem.StorageAccessFramework.readDirectoryAsync(dir);
 
       if (!files || files.length === 0) {
         Alert.alert(`Oops no files are there in the folder`);
@@ -72,7 +71,7 @@ const ViewCustomer = () => {
       });
 
       if (!matchedFiles || matchedFiles.length === 0) {
-        Alert.alert(`No Invoice with ${orderId} is not found`);
+        Alert.alert(`No Invoice with Order No: ${orderId} is found`);
       } else {
         const name = decodeURIComponent(
           matchedFiles[0].substring(matchedFiles[0].lastIndexOf("/") + 1)

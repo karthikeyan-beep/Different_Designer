@@ -68,6 +68,7 @@ export default function WebViewComp({ route }) {
   <head>
     <title>PDF.js viewer</title>
     <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=0.43, minimum-scale=0.4, maximum-scale=1.0, user-scalable=yes">
     <script src="https://cdnjs.cloudflare.com/ajax/libs/pdf.js/2.10.377/pdf.min.js"></script>
     <style>
       body { margin: 0; padding: 0; }
@@ -87,7 +88,7 @@ export default function WebViewComp({ route }) {
 
         for (let pageNumber = 1; pageNumber <= pdf.numPages; pageNumber++) {
           pdf.getPage(pageNumber).then(function(page) {
-            var scale = 1.6;
+            var scale = 1.5;
             var viewport = page.getViewport({ scale: scale });
 
             var canvas = document.createElement('canvas');
@@ -122,11 +123,6 @@ export default function WebViewComp({ route }) {
   </html>
 `;
   return (
-    // <WebView
-    //   originWhitelist={["*"]}
-    //   source={{ html: htmlContent }}
-    //   style={{ flex: 1 }}
-    // />
     <View style={{ flex: 1 }}>
     {loading && (
       <Spinner

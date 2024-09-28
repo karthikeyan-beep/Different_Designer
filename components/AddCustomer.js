@@ -13,7 +13,7 @@ import {
   Alert,
   RefreshControl,
   ToastAndroid,
-  ActivityIndicator
+  ActivityIndicator,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -66,7 +66,6 @@ const AddCustomer = () => {
     return () => clearTimeout(timer);
   }, []);
 
-
   useFocusEffect(
     useCallback(() => {
       const fetchTitle = async () => {
@@ -97,7 +96,7 @@ const AddCustomer = () => {
       fetchTitle();
     }, [])
   );
-  
+
   useEffect(() => {
     navigation.setOptions({
       headerTitle: title,
@@ -274,7 +273,7 @@ const AddCustomer = () => {
           text: "Cancel",
           onPress: () => cancelComplete(),
           style: "cancel",
-        }
+        },
       ],
       { cancelable: false }
     );
@@ -317,9 +316,9 @@ const AddCustomer = () => {
       if (type === "share") {
         setIsLoadingShare(true);
         sharePdf(data);
-        setIsLoadingShare(false); 
+        setIsLoadingShare(false);
       } else {
-        setIsLoadingSave(true)
+        setIsLoadingSave(true);
         savePdf(data);
         setIsLoadingSave(false);
       }
@@ -510,8 +509,12 @@ const AddCustomer = () => {
   };
 
   const compareDates = (orderDate, deliveryDate) => {
-    const order = new Date(orderDate);
-    const delivery = new Date(deliveryDate);
+    const [orderDay, orderMonth, orderYear] = orderDate.split("-").map(Number);
+    const [deliveryDay, deliveryMonth, deliveryYear] = deliveryDate.split("-").map(Number);
+
+    const order = new Date(orderYear, orderMonth - 1, orderDay);
+    const delivery = new Date(deliveryYear, deliveryMonth - 1, deliveryDay);
+
     return delivery >= order;
   };
 
@@ -652,53 +655,7 @@ const AddCustomer = () => {
           <View
             style={{
               flexDirection: "row",
-              justifyContent: "space-between",
               width: "90%",
-              alignSelf: "center",
-              margin: 10,
-            }}
-          >
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "55%",
-              }}
-            >
-              <RadioButton
-                value="Male"
-                status={checked === "Male" ? "checked" : "unchecked"}
-                onPress={() => setChecked("Male")}
-                color="#C2CCD3"
-                uncheckedColor="#C2CCD3"
-              />
-              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>Male</Text>
-            </View>
-
-            <View
-              style={{
-                flexDirection: "row",
-                alignItems: "center",
-                width: "50%",
-              }}
-            >
-              <RadioButton
-                value="Female"
-                status={checked === "Female" ? "checked" : "unchecked"}
-                onPress={() => setChecked("Female")}
-                color="#C2CCD3"
-                uncheckedColor="#C2CCD3"
-              />
-              <Text style={{ fontWeight: "bold", color: "#C2CCD3" }}>
-                Female
-              </Text>
-            </View>
-          </View>
-          <View
-            style={{
-              flexDirection: "row",
-              width: "90%",
-              margin: 10,
               alignSelf: "center",
             }}
           >
@@ -735,7 +692,7 @@ const AddCustomer = () => {
             <Text
               style={{
                 fontSize: 16,
-                marginBottom: 8,
+                marginBottom: 10,
                 alignSelf: "center",
                 fontWeight: "bold",
                 color: "#C2CCD3",
@@ -747,7 +704,7 @@ const AddCustomer = () => {
               mode="dialog"
               selectedValue={selectedValue}
               style={{
-                width: "80%",
+                width: "90%",
                 height: 35,
                 marginBottom: 14,
                 backgroundColor: "#C2CCD3",
@@ -859,7 +816,7 @@ const AddCustomer = () => {
                       inputStyle={{
                         color: "#1F4E67",
                       }}
-                      style={{ width: "40%", alignSelf: "center", margin: 10 }}
+                      style={{ width: "50%", alignSelf: "center", margin: 10 }}
                     />
                     <Text
                       style={{
@@ -1169,13 +1126,12 @@ const styles = StyleSheet.create({
     backgroundColor: "#1F4E67",
     alignItems: "center",
   },
-  scrollViewContent: {},
   dateContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
     width: "90%",
     alignSelf: "center",
-    margin: 10,
+    margin: 14,
   },
   dateInput: {
     width: "45%",
@@ -1199,9 +1155,9 @@ const styles = StyleSheet.create({
   },
   tableContainer: {
     flex: 1,
-    paddingVertical: 25,
-    paddingHorizontal: 25,
-    width: "95%",
+    paddingVertical: 20,
+    paddingHorizontal: 20,
+    width: "100%",
     alignSelf: "center",
     marginTop: 10,
   },
