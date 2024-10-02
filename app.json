@@ -2,7 +2,7 @@
   "expo": {
     "name": "Different Designer",
     "slug": "Different_Designer",
-    "version": "4.0.2",
+    "version": "4.0.3",
     "orientation": "portrait",
     "icon": "./assets/appIcon.png",
     "userInterfaceStyle": "light",

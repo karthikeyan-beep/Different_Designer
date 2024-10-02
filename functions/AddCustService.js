@@ -242,7 +242,7 @@ function generateHtmlContent(data) {
             <h4 style="margin-bottom: 5px;margin-top: 7px;">Terms & Conditions:</h4>
             <ul style="font-size: 12px;  margin-top: 0; ">
                <li>Fabric to be collected on or before 15 days from date of delivery.</li>
-               <li>Fixed cost and avoid negotiations.</li>
+               <li>Fixed cost and kindly avoid negotiations.</li>
             </ul>
          </div>
          <!-- Footer Text Contact Info -->
