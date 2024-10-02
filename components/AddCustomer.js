@@ -13,7 +13,6 @@ import {
   Alert,
   RefreshControl,
   ToastAndroid,
-  ActivityIndicator,
 } from "react-native";
 import DateTimePicker from "@react-native-community/datetimepicker";
 import Spinner from "react-native-loading-spinner-overlay";
@@ -21,7 +20,6 @@ import { Picker } from "@react-native-picker/picker";
 import {
   TextInput,
   HelperText,
-  RadioButton,
   Text,
   Divider,
   Button,
@@ -44,6 +42,7 @@ import * as ImageManipulator from "expo-image-manipulator";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AddCustTextInput from "../common/AddCustTextInput";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
+import CustomButton from "../common/CustomButton";
 
 const AddCustomer = () => {
   const scrollViewRef = useRef(null);
@@ -108,7 +107,6 @@ const AddCustomer = () => {
   const [orderDate, setOrderDate] = React.useState("");
   const [deliveryDate, setDeliveryDate] = React.useState("");
   const [datePickerType, setDatePickerType] = React.useState("");
-  const [checked, setChecked] = React.useState("Male");
   const [selectedValue, setSelectedValue] = React.useState(pickerSelection[0]);
   const [modalVisible, setModalVisible] = React.useState(false);
   const [spinnerValue, setSpinnerValue] = React.useState(1);
@@ -287,7 +285,6 @@ const AddCustomer = () => {
         customerMobileNumber: customerMobileNumber,
         orderDate: orderDate,
         deliveryDate: deliveryDate,
-        checked: checked,
         totalOrderValue: totalOrderValue,
         measurements: measurements,
         tableData: tableData,
@@ -304,15 +301,7 @@ const AddCustomer = () => {
         Alert.alert("No Item Selected", "Please add at least one item.");
         return;
       }
-
-      if (!checkedCash && !checkedCreditCard && !checkedUPI) {
-        Alert.alert(
-          "Payment Method Required",
-          "Please select at least one payment method."
-        );
-        return;
-      }
-
+      
       if (type === "share") {
         setIsLoadingShare(true);
         sharePdf(data);
@@ -360,6 +349,13 @@ const AddCustomer = () => {
       );
       setTotalOrderValue(newTotalCost);
       setBalance(newTotalCost - advance);
+      ToastAndroid.showWithGravityAndOffset(
+        `Added ${selectedValue}`,
+        ToastAndroid.SHORT,
+        ToastAndroid.BOTTOM,
+        25,
+        50
+      );
       return updatedTableData;
     });
   };
@@ -1042,56 +1038,16 @@ const AddCustomer = () => {
               </View>
             ))}
           </View>
-          <View
-            style={{
-              alignSelf: "center",
-              width: "100%",
-              marginTop: 10,
-              flexDirection: "column-reverse",
-              gap: 10,
-            }}
-          >
-            {isLoadingShare ? (
-              <ActivityIndicator size="large" color="#21ba45" />
-            ) : (
-              <Button
-                style={{
-                  width: "80%",
-                  alignSelf: "center",
-                  backgroundColor: "#21ba45",
-                }}
-                mode="contained"
-                onPress={() => submitPdf("share")}
-              >
-                Share
-              </Button>
-            )}
-          </View>
-          <View
-            style={{
-              alignSelf: "center",
-              width: "100%",
-              marginTop: 10,
-              flexDirection: "column-reverse",
-              gap: 10,
-            }}
-          >
-            {isLoadingSave ? (
-              <ActivityIndicator size="large" color="red" />
-            ) : (
-              <Button
-                style={{
-                  width: "80%",
-                  alignSelf: "center",
-                  backgroundColor: "#3E525F",
-                }}
-                mode="contained"
-                onPress={() => submitPdf("save")}
-              >
-                Save
-              </Button>
-            )}
-          </View>
+          <CustomButton
+            color="#21ba45"
+            buttonText="Share"
+            onPress={() => submitPdf("share")}
+          />
+          <CustomButton
+            color="#3E525F"
+            buttonText="Save"
+            onPress={() => submitPdf("save")}
+          />
           <View
             style={{
               alignSelf: "center",
@@ -1199,7 +1155,7 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
   },
   cell: {
-    fontSize: 15,
+    fontSize: 14,
     fontWeight: "bold",
     textAlign: "justify",
     flex: 1,

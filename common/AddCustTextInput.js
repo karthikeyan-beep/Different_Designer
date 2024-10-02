@@ -10,7 +10,7 @@ const AddCustTextInput = ({
   keyboardType,
 }) => {
   return (
-    <View style={styles.inputContainer}>
+    <View  style={[styles.inputContainer, label === "Notes"  && styles.overrideStyle]}>
       <Text style={styles.heading}>{label}</Text>
       <TextInput
         mode="flat"
@@ -37,6 +37,11 @@ const styles = StyleSheet.create({
     marginBottom: 5,
     color:"#C2CCD3",
   },
+  overrideStyle:{
+    width: "60%",
+    margin: 8,
+    alignSelf: "center",
+  }
 });
 
 export default AddCustTextInput;

@@ -146,7 +146,7 @@ function generateHtmlContent(data) {
         (m) => `
       <td style="padding: 4px 6px; text-align: left; font-size: 12px;">
         <span style="display: inline-block; min-width: 80px;  line-height: 1; margin-bottom: 0;"><b>${m.label}</b>:</span> 
-        ${parseFloat(m.value).toFixed(2)}
+        ${m.label === "Notes" ? m.value : parseFloat(m.value).toFixed(2)}
       </td>`
       )
       .join("")}
