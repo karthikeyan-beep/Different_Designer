@@ -21,9 +21,8 @@ export const formatDate = (date) => {
 };
 
 export const savePdf = async (data) => {
-
   const orderNumber = data.orderNumber?.toString() || "";
-  let customerName = data.customerName.replace(/\s+/g, '_');
+  let customerName = data.customerName.replace(/\s+/g, "_");
   const filename = `Invoice_${orderNumber}_${customerName}.pdf`;
   const storedDirectoryUri = await AsyncStorage.getItem("directoryUri");
 
@@ -137,16 +136,19 @@ function generateHtmlContent(data) {
     )
     .join("");
 
+  const notes = data.measurements.find(item => item.label === "Notes")?.value;
+
   const measurementHtml = rows
     .map(
       (row) => `
   <tr>
     ${row
+      .filter((m) => m.label !== "Notes") 
       .map(
         (m) => `
       <td style="padding: 4px 6px; text-align: left; font-size: 12px;">
         <span style="display: inline-block; min-width: 80px;  line-height: 1; margin-bottom: 0;"><b>${m.label}</b>:</span> 
-        ${m.label === "Notes" ? m.value : parseFloat(m.value).toFixed(2)}
+        ${parseFloat(m.value).toFixed(2)}
       </td>`
       )
       .join("")}
@@ -154,12 +156,13 @@ function generateHtmlContent(data) {
 `
     )
     .join("");
+    
 
   return `
 <html>
    <head>
       <style>
-         .page { page-break-after: always;  }
+         .page { page-break-after: always; }
          .image-gallery {
          display: flex;
          flex-wrap: wrap;
@@ -174,7 +177,7 @@ function generateHtmlContent(data) {
       </style>
    </head>
    <body>
-      <div  class="page" style="margin: 0px 60px;">
+      <div  class="page" style="margin: 0px 55px;">
          <h2 style="text-align: center; margin-top: 0px; margin-bottom: 5px; color: #1F4E67;">DIFFERENT DESIGNER</h2>
          <h5 style="text-align: center; margin-top: 0px; margin-bottom: 20px; color: #1F4E67;">The House of Ladies Wear Stitching and Embroidery Work</h5>
          <h3 style="text-align: center; margin-bottom: 20px;">INVOICE</h3>
@@ -206,6 +209,12 @@ function generateHtmlContent(data) {
                </table>
             </div>
          </div>
+         <div style="flex: 1; margin-top: 0px; margin-bottom: 6px; text-align: left;">
+            <label for="measurementInput" style="font-size: 11px; margin-bottom: 4px;font-weight: bold;">Notes:</label>
+            <div style="font-size: 10px; color: #333;">
+             ${notes}
+            </div>
+        </div>
          <!-- New Table Below Existing Table -->
          <div style="margin-top: 0px; margin-bottom: 0px; display: flex; justify-content: center; align-items: center;">
             <table style="width: 90%;  height: 70px; border-collapse: collapse; border: 1px solid black;">

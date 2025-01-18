@@ -86,7 +86,7 @@ export const inputFields = [
   { label: "Btm HT", name: "Btm HT", maxLength: 5, keyboardType: "phone-pad" },
   { label: "Btm loose", name: "Btm loose", maxLength: 5, keyboardType: "phone-pad" },
   { label: "Hip", name: "Hip", maxLength: 5, keyboardType: "phone-pad" },
-  { label: "Notes", name: "Notes", maxLength: 20},
+  { label: "Notes", name: "Notes", maxLength: 100},
 ];
 
 export const pickerSelection = [
