@@ -210,8 +210,8 @@ function generateHtmlContent(data) {
             </div>
          </div>
          <div style="flex: 1; margin-top: 0px; margin-bottom: 6px; text-align: left;">
-            <label for="measurementInput" style="font-size: 11px; margin-bottom: 4px;font-weight: bold;">Notes:</label>
-            <div style="font-size: 10px; color: #333;">
+            <label for="measurementInput" style="font-size: 12px; margin-bottom: 4px;font-weight: bold;">Notes:</label>
+            <div style="font-size: 12px; color: #333;">
              ${notes}
             </div>
         </div>

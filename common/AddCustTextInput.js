@@ -9,15 +9,22 @@ const AddCustTextInput = ({
   onChange,
   keyboardType,
 }) => {
-  return (
-    <View  style={[styles.inputContainer, label === "Notes"  && styles.overrideStyle]}>
+  const isLabel =  label === "Notes";
+   return (
+    <View  style={[styles.inputContainer, isLabel  && styles.overrideStyle]}>
       <Text style={styles.heading}>{label}</Text>
       <TextInput
         mode="flat"
         value={value}
         maxLength={maxLength}
         keyboardType={keyboardType || "default"}
-        style={{ width: "100%", alignContent: "center" }}
+        style={{ 
+          width: "100%",
+          height: isLabel ? 30 : 0,
+          minHeight: isLabel ? 90 : 0,
+          flexShrink: 1,
+        }}
+        multiline={isLabel} 
         returnKeyType="done"
         onChangeText={onChange} 
       />
@@ -38,8 +45,8 @@ const styles = StyleSheet.create({
     color:"#C2CCD3",
   },
   overrideStyle:{
-    width: "60%",
-    margin: 8,
+    width: "95%",
+    margin: 10,
     alignSelf: "center",
   }
 });

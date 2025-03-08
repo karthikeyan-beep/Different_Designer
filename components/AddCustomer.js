@@ -387,7 +387,7 @@ const AddCustomer = () => {
 
     return (
       <View key={item.id} style={styles.row}>
-        <Text style={styles.cell}>{item.Item}</Text>
+        <Text style={styles.cell}>{item.Item?.replace(/\s+/g, '')}</Text>
         <Text style={styles.cellQty}>{item.Qty}</Text>
         <Text style={styles.cell}>{item.Cost}</Text>
         <TouchableOpacity
