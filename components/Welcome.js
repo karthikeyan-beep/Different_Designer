@@ -1,12 +1,15 @@
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import {
   StyleSheet,
   Text,
   View,
   ImageBackground,
   TouchableOpacity,
+  Alert,
 } from "react-native";
+import { useFocusEffect } from "@react-navigation/native";
 import Spinner from "react-native-loading-spinner-overlay";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useNavigation } from "@react-navigation/native";
 
 const Welcome = () => {
@@ -14,14 +17,44 @@ const Welcome = () => {
   const items = [
     { title: "NEW BILL", route: "AddCustomer", icon: "adduser" },
     { title: "VIEW BILL", route: "ViewCustomer", icon: "eyeo" },
+    { title: "LIVE ORDER", route: "Live", icon: "eyeo" }
   ];
 
   const navigation = useNavigation();
 
-  useEffect(() => {
-    const timer = setTimeout(() => setLoading(false), 1000);
-    return () => clearTimeout(timer);
-  }, []);
+  useFocusEffect(
+    useCallback(() => {
+      const checkStorageAndNavigate = async () => {
+        const directoryUri = await AsyncStorage.getItem("directoryUri");
+        const excelName = await AsyncStorage.getItem("excelName");
+        const sheetName = await AsyncStorage.getItem("sheetName");
+
+        let missingItems = [];
+        if (!directoryUri) missingItems.push("Directory URI");
+        if (!excelName) missingItems.push("Excel Name");
+        if (!sheetName) missingItems.push("Sheet Name");
+
+        if (missingItems.length > 0) {
+          Alert.alert(
+            "Setup Required",
+            `Please setup the following:\n\n${missingItems.join("\n")}`,
+            [
+              {
+                text: "Go to Settings",
+                onPress: () => navigation.navigate("Settings"),
+              },
+            ]
+          );
+        }
+      };
+
+      checkStorageAndNavigate();
+
+      const timer = setTimeout(() => setLoading(false), 1000);
+      return () => clearTimeout(timer);
+    }, [])
+  );
+  
 
   return (
     <ImageBackground

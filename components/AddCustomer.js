@@ -39,12 +39,16 @@ import {
 } from "../Constants";
 import * as ImagePicker from "expo-image-picker";
 import * as ImageManipulator from "expo-image-manipulator";
+import { useRoute } from "@react-navigation/native";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import AddCustTextInput from "../common/AddCustTextInput";
 import { useFocusEffect, useNavigation } from "@react-navigation/native";
 import CustomButton from "../common/CustomButton";
 
 const AddCustomer = () => {
+  const route = useRoute();
+  const { orderData } = route.params || {};
+
   const scrollViewRef = useRef(null);
   const customerNameRef = useRef(null);
   const customerMobileNumberRef = useRef(null);
@@ -71,7 +75,7 @@ const AddCustomer = () => {
         try {
           const orderNumberString = await AsyncStorage.getItem("orderNumber");
           if (orderNumberString) {
-            const orderNumber = JSON.parse(orderNumberString);
+            const orderNumber = orderData?.["Order Number"] ? orderData["Order Number"] : JSON.parse(orderNumberString);
             setTitle(`Order No : ${orderNumber}`);
             setOrder(orderNumber);
           } else {
@@ -102,6 +106,60 @@ const AddCustomer = () => {
     });
   }, [navigation, title]);
 
+ useEffect(() => {
+   if (orderData && Object.keys(orderData).length > 0) {
+     setcustomerName(orderData["Name"] || "");
+     setcustomerMobileNumber(orderData["Mobile Number"] || "");
+     setOrderDate(orderData["Order Date"] || "");
+     setDeliveryDate(orderData["Delivery Date"] || "");
+     setTotalOrderValue(orderData["Total Order Value"] || "0");
+
+     setCheckedCash(orderData["Payment Mode"] === "Cash");
+     setCheckedUPI(orderData["Payment Mode"] === "UPI");
+     setCheckedCreditCard(orderData["Payment Mode"] === "Credit Card");
+
+     setPaymentStatus(orderData["Payment Status"] || null);
+     setStitchingStatus(orderData["Stitching Status"] || null);
+     setDeliveryStatus(orderData["Delivery Status"] || null);
+
+     const newAdvance = orderData["Advance"] || "0";
+     setAdvance(newAdvance);
+
+     setAdvance(orderData["Advance"] || "");
+     setBalance(orderData["Balance"] || 0);
+
+     setMeasurements((prevMeasurements) =>
+       prevMeasurements.map((measurement) => ({
+         ...measurement,
+         value: orderData[measurement.name]
+           ? orderData[measurement.name].trim()
+           : measurement.value,
+       }))
+     );
+
+     const filteredTableData = Object.entries(orderData)
+       .filter(([key, value]) => pickerSelection.includes(key) && value !== "")
+       .map(([key, value]) => ({
+         id: key,
+         Item: key,
+         Qty: Number(value) || 1,
+         Cost: (Number(value) || 1) * getCostForItem(key),
+       }));
+
+     setTableData(filteredTableData);
+     const newTotalCost = filteredTableData.reduce(
+       (sum, item) => sum + item.Cost,
+       0
+     );
+
+     setTotalOrderValue(newTotalCost);
+
+     const parsedAdvance = Number(newAdvance) || 0;
+     setBalance(newTotalCost - parsedAdvance);
+   }
+ }, [orderData]);
+
+
   const [customerName, setcustomerName] = React.useState("");
   const [customerMobileNumber, setcustomerMobileNumber] = React.useState("");
   const [orderDate, setOrderDate] = React.useState("");
@@ -115,6 +173,10 @@ const AddCustomer = () => {
   const [checkedCash, setCheckedCash] = React.useState(false);
   const [checkedUPI, setCheckedUPI] = React.useState(false);
   const [checkedCreditCard, setCheckedCreditCard] = React.useState(false);
+
+  const [paymentStatus, setPaymentStatus] = React.useState(null);
+  const [stitchingStatus, setStitchingStatus] = React.useState(null);
+  const [deliveryStatus, setDeliveryStatus] = React.useState(null);
 
   const [errors, setErrors] = React.useState({
     nameError: "",
@@ -217,10 +279,8 @@ const AddCustomer = () => {
   const [advance, setAdvance] = React.useState("");
   const [balance, setBalance] = React.useState(0);
   const [images, setImages] = React.useState([]);
-  const [measurements, setMeasurements] = React.useState(
-    measurementsInitialState
-  );
-
+ 
+  const [measurements, setMeasurements] = React.useState(measurementsInitialState);
   const [show, setShow] = React.useState(false);
   const [tableData, setTableData] = React.useState([]);
 
@@ -294,6 +354,9 @@ const AddCustomer = () => {
         isCreditCard: checkedCreditCard,
         isUPI: checkedUPI,
         images: images,
+        paymentStatus: paymentStatus,
+        stitchingStatus: stitchingStatus,
+        deliveryStatus: deliveryStatus,
         isFabric: images.length > 0,
       };
 
@@ -993,6 +1056,174 @@ const AddCustomer = () => {
                 </View>
               </View>
             </View>
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 10 }}
+            >
+              Select Payment Status 💰
+            </Text>
+            <View style={{ padding: 0 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 40,
+                  marginTop: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Checkbox
+                    status={
+                      paymentStatus === "Pending" ? "checked" : "unchecked"
+                    }
+                    onPress={() => setPaymentStatus("Pending")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Pending
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Checkbox
+                    status={
+                      paymentStatus === "Completed" ? "checked" : "unchecked"
+                    }
+                    onPress={() => setPaymentStatus("Completed")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Completed
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 10 }}
+            >
+              Select Stitching Status🧵 
+            </Text>
+            <View style={{ padding: 0 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  justifyContent: "space-between",
+                  marginTop: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Checkbox
+                    status={
+                      stitchingStatus === "Not Started"
+                        ? "checked"
+                        : "unchecked"
+                    }
+                    onPress={() => setStitchingStatus("Not Started")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Not Started
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginLeft: 10,
+                  }}
+                >
+                  <Checkbox
+                    status={
+                      stitchingStatus === "In Progress"
+                        ? "checked"
+                        : "unchecked"
+                    }
+                    onPress={() => setStitchingStatus("In Progress")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    In Progress
+                  </Text>
+                </View>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    marginLeft: 10,
+                  }}
+                >
+                  <Checkbox
+                    status={
+                      stitchingStatus === "Completed" ? "checked" : "unchecked"
+                    }
+                    onPress={() => setStitchingStatus("Completed")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Completed
+                  </Text>
+                </View>
+              </View>
+            </View>
+            <Text
+              style={{ fontWeight: "bold", color: "#C2CCD3", paddingTop: 10 }}
+            >
+              Select Delivery Status 🚚
+            </Text>
+            <View style={{ padding: 0 }}>
+              <View
+                style={{
+                  flexDirection: "row",
+                  alignItems: "center",
+                  gap: 40,
+                  marginTop: 10,
+                }}
+              >
+                <View style={{ flexDirection: "row", alignItems: "center" }}>
+                  <Checkbox
+                    status={
+                      deliveryStatus === "Pending" ? "checked" : "unchecked"
+                    }
+                    onPress={() => setDeliveryStatus("Pending")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Pending
+                  </Text>
+                </View>
+
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                  }}
+                >
+                  <Checkbox
+                    status={
+                      deliveryStatus === "Completed" ? "checked" : "unchecked"
+                    }
+                    onPress={() => setDeliveryStatus("Completed")}
+                    color="#E1D9D1"
+                    uncheckedColor="#E1D9D1"
+                  />
+                  <Text style={{ marginLeft: -4, color: "#C2CCD3" }}>
+                    Completed
+                  </Text>
+                </View>
+              </View>
+            </View>
             <View
               style={{
                 flexDirection: "row",
@@ -1223,7 +1454,6 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     flexWrap: "wrap",
     justifyContent: "space-between",
-    justifyContent: "center",
     alignItems: "center",
   },
   spinnerTextStyle: {

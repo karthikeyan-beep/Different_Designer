@@ -1,9 +1,10 @@
 import { Alert, ToastAndroid } from "react-native";
-import { base64Qr } from "../Constants";
+import { base64Qr, headers, rowData } from "../Constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import * as Print from "expo-print";
+import XLSX from "xlsx";
 
 export const formatDate = (date) => {
   let day = date.getDate();
@@ -25,6 +26,8 @@ export const savePdf = async (data) => {
   let customerName = data.customerName.replace(/\s+/g, "_");
   const filename = `Invoice_${orderNumber}_${customerName}.pdf`;
   const storedDirectoryUri = await AsyncStorage.getItem("directoryUri");
+  const excelName = await AsyncStorage.getItem("excelName");
+  const sheetName = await AsyncStorage.getItem("sheetName");
 
   let directoryUri = storedDirectoryUri;
 
@@ -41,9 +44,47 @@ export const savePdf = async (data) => {
     }
   }
 
+  await createOrUpdateExcel(data, directoryUri, excelName, sheetName);
+
+  ToastAndroid.showWithGravityAndOffset(
+    `Order : ${data.orderNumber} update complete in Excel ...`,
+    ToastAndroid.SHORT,
+    ToastAndroid.CENTER,
+    25,
+    50
+  );
+
   const { uri } = await Print.printToFileAsync({
     html: generateHtmlContent(data),
   });
+
+  ToastAndroid.showWithGravityAndOffset(
+    `Starting PDF Creation for Order : ${data.orderNumber}`,
+    ToastAndroid.SHORT,
+    ToastAndroid.CENTER,
+    25,
+    50
+  );
+
+  const filenamePrefix = `Invoice_${orderNumber}`;
+  const files =
+    await FileSystem.StorageAccessFramework.readDirectoryAsync(directoryUri);
+
+  const matchingFiles = files.filter((file) => file.includes(filenamePrefix));
+
+  if (matchingFiles.length > 0) {
+    for (const file of matchingFiles) {
+      await FileSystem.StorageAccessFramework.deleteAsync(file);
+      const decodedFileUri = decodeURIComponent(file);
+      ToastAndroid.showWithGravityAndOffset(
+        `Removing old PDF ${decodedFileUri.split("/").pop()}`,
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+        25,
+        50
+      );
+    }
+  }
 
   const base64 = await FileSystem.readAsStringAsync(uri, {
     encoding: FileSystem.EncodingType.Base64,
@@ -62,9 +103,9 @@ export const savePdf = async (data) => {
     .catch();
 
   ToastAndroid.showWithGravityAndOffset(
-    "Save Success!",
-    ToastAndroid.LONG,
-    ToastAndroid.BOTTOM,
+    `${filename} Success...`,
+    ToastAndroid.SHORT,
+    ToastAndroid.CENTER,
     25,
     50
   );
@@ -99,7 +140,95 @@ export const sharePdf = async (data) => {
       Alert.alert("Share Not available");
     }
   } catch (error) {
-    Alert.alert("Error", "An error occurred while creating the PDF.");
+    Alert.alert(error, "An error occurred while creating the PDF.");
+  }
+};
+
+export const createOrUpdateExcel = async (data, directoryUri, excelName, sheetName) => {
+  const FILE_NAME = `${excelName}.xlsx`;
+  try {
+    const files =
+      await FileSystem.StorageAccessFramework.readDirectoryAsync(directoryUri);
+
+    let fileUri = files.find((file) => file.includes(FILE_NAME));
+
+    if (!fileUri) {
+      ToastAndroid.showWithGravityAndOffset(
+        `Creating ${FILE_NAME} file...`,
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+        25,
+        50
+      );
+
+      const ws = XLSX.utils.json_to_sheet([rowData(data)], { header: headers });
+
+      const wb = XLSX.utils.book_new();
+      XLSX.utils.book_append_sheet(wb, ws, `${sheetName}`);
+      const excelData = XLSX.write(wb, { type: "base64" });
+
+      const newFileUri =
+        await FileSystem.StorageAccessFramework.createFileAsync(
+          directoryUri,
+          FILE_NAME,
+          "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+        );
+
+      await FileSystem.writeAsStringAsync(newFileUri, excelData, {
+        encoding: FileSystem.EncodingType.Base64,
+      });
+    } else {
+      ToastAndroid.showWithGravityAndOffset(
+        `Updating ${FILE_NAME} file...`,
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+        25,
+        50
+      );
+
+      const existingData =
+        await FileSystem.StorageAccessFramework.readAsStringAsync(fileUri, {
+          encoding: FileSystem.EncodingType.Base64,
+        });
+
+      const workbook = XLSX.read(existingData, { type: "base64" });
+
+      const sheet = workbook.Sheets[sheetName];
+
+      const jsonData = XLSX.utils.sheet_to_json(sheet);
+
+      const targetOrderNumber = data.orderNumber;
+      const newRow = rowData(data);
+
+      const rowIndex = jsonData.findIndex(
+        (row) =>
+          String(row["Order Number"]).trim().toLowerCase() ===
+          String(targetOrderNumber).trim().toLowerCase()
+      );
+
+      if (rowIndex !== -1) {
+        jsonData[rowIndex] = { ...jsonData[rowIndex], ...rowData(data) };
+      } else {
+        jsonData.push(rowData(data));
+      }
+
+      XLSX.utils.sheet_add_json(sheet, [newRow], {
+        skipHeader: true,
+        origin: rowIndex !== -1 ? rowIndex + 1 : -1,
+      });
+
+      const updatedExcel = XLSX.write(workbook, { type: "base64" });
+
+      await FileSystem.StorageAccessFramework.writeAsStringAsync(
+        fileUri,
+        updatedExcel,
+        {
+          encoding: FileSystem.EncodingType.Base64,
+        }
+      );
+    }
+  } catch (error) {
+    Alert.alert("Error", "Failed to manage the Excel file.");
   }
 };
 
@@ -136,14 +265,14 @@ function generateHtmlContent(data) {
     )
     .join("");
 
-  const notes = data.measurements.find(item => item.label === "Notes")?.value;
+  const notes = data.measurements.find((item) => item.label === "Notes")?.value;
 
   const measurementHtml = rows
     .map(
       (row) => `
   <tr>
     ${row
-      .filter((m) => m.label !== "Notes") 
+      .filter((m) => m.label !== "Notes")
       .map(
         (m) => `
       <td style="padding: 4px 6px; text-align: left; font-size: 12px;">
@@ -156,7 +285,6 @@ function generateHtmlContent(data) {
 `
     )
     .join("");
-    
 
   return `
 <html>

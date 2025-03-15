@@ -9,6 +9,7 @@ import ViewCustomer from "./components/ViewCustomer";
 import Settings from "./components/Settings";
 import WebViewComp from "./components/WebView";
 import { StatusBar, TouchableOpacity } from "react-native";
+import Live from "./components/Live";
 
 const Stack = createNativeStackNavigator();
 
@@ -47,7 +48,7 @@ export default function App() {
           options={({ navigation }) => ({
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
-            animation:'slide_from_right',
+            animation:'slide_from_left',
             headerShadowVisible: false,
             headerRight: () => (
               <TouchableOpacity
@@ -84,6 +85,16 @@ export default function App() {
         <Stack.Screen
           name="WebViewComp"
           component={WebViewComp}
+          options={{
+            headerStyle: { backgroundColor: "#1F4E67" },
+            headerTintColor: "#C2CCD3",
+            animation:'slide_from_right',
+            headerShadowVisible: false,
+          }}
+        />
+        <Stack.Screen
+          name="Live"
+          component={Live}
           options={{
             headerStyle: { backgroundColor: "#1F4E67" },
             headerTintColor: "#C2CCD3",
