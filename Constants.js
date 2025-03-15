@@ -44,7 +44,8 @@ const MACHINE_EMBROIDERY = "Machine Embroidery";
 const LOGO_DESIGN_CHARGE_ONE_TIME = "Logo Design Charge- One Time";
 const LOGO_EMBROIDERY = "Logo Embroidery";
 const SAREE_SIDE_STITCHING = "Saree-Side stitching";
-const SAREE_FALCE_STITCHING_WITH_HEMMING ="Saree -Falce stitching with hemming";
+const SAREE_FALCE_STITCHING_WITH_HEMMING =
+  "Saree -Falce stitching with hemming";
 const SAREE_FALCE_MACHINE_STITCHING = "Saree -Falce machine stitching";
 const SAREE_PALLU_KNOT_HAND_WORK = "Saree Pallu knot-Hand work";
 const SAREE_PALLU_KNOT_READY_MADE = "Saree Pallu knot-Ready made";
@@ -56,129 +57,132 @@ const STITCHING = "Stitching";
 const COURIER_HANDLING = "Courier&Handling";
 
 export const measurementsInitialState = [
-  { name: LENGTH_MEASUREMENTS, value: "", label: "Length"},
-  { name: FRONT_NECK_HT_MEASUREMENTS, value: "", label: "F.NeckHT"},
+  { name: LENGTH_MEASUREMENTS, value: "", label: "Length" },
+  { name: FRONT_NECK_HT_MEASUREMENTS, value: "", label: "F.NeckHT" },
   { name: CHEST_MEASUREMENTS, value: "", label: "Chest" },
-  { name: BACK_NECK_HT_MEASUREMENTS, value: "", label: "B.NeckHT"},
-  { name: SHOULDER_MEASUREMENTS, value: "", label: "Shoulder"},
-  { name: WAIST_LOOSE_MEASUREMENTS, value: "", label: "Waist Loose"},
+  { name: BACK_NECK_HT_MEASUREMENTS, value: "", label: "B.NeckHT" },
+  { name: SHOULDER_MEASUREMENTS, value: "", label: "Shoulder" },
+  { name: WAIST_LOOSE_MEASUREMENTS, value: "", label: "Waist Loose" },
   { name: SLV_LENGTH_MEASUREMENTS, value: "", label: "SLV Length" },
-  { name: SLV_ROUND_MEASUREMENTS, value: "",  label: "SLV Round" },
+  { name: SLV_ROUND_MEASUREMENTS, value: "", label: "SLV Round" },
   { name: F_DOT_PT_MEASUREMENTS, value: "", label: "F.DotPT" },
-  { name: MID_AND_ROUND_MEASUREMENTS, value: "", label: "MidH&Round"},
-  { name: UP_CHEST_MEASUREMENTS, value: "", label: "UpChest"},
-  { name: TOP_L_MEASUREMENTS, value: "",  label: "Top L"},
-  { name: SEAT_MEASUREMENTS, value: "", label: "Seat"},
-  { name: BTM_HT_MEASUREMENTS, value: "", label: "Btm HT"},
+  { name: MID_AND_ROUND_MEASUREMENTS, value: "", label: "MidH&Round" },
+  { name: UP_CHEST_MEASUREMENTS, value: "", label: "UpChest" },
+  { name: TOP_L_MEASUREMENTS, value: "", label: "Top L" },
+  { name: SEAT_MEASUREMENTS, value: "", label: "Seat" },
+  { name: BTM_HT_MEASUREMENTS, value: "", label: "Btm HT" },
   { name: BTM_LOOSE_MEASUREMENTS, value: "", label: "Btm loose" },
   { name: HIP_MEASUREMENTS, value: "", label: "Hip" },
-  { name: SLIT_MEASUREMENTS, value: "", label: "Slit"},
-  { name: EMB_MEASUREMENTS, value: "", label: "EMB"},
-  { name: NOTES_MEASUREMENTS, value: "", label: "Notes"},
+  { name: SLIT_MEASUREMENTS, value: "", label: "Slit" },
+  { name: EMB_MEASUREMENTS, value: "", label: "EMB" },
+  { name: NOTES_MEASUREMENTS, value: "", label: "Notes" },
 ];
+
+
+const MAX_LENGTH = 6;
 
 export const inputFields = [
   {
     label: "Length",
     name: LENGTH_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "F.NeckHT",
     name: FRONT_NECK_HT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   { label: "Chest", name: "chest", maxLength: 5, keyboardType: PHONE_PAD },
   {
     label: "B.NeckHT",
     name: BACK_NECK_HT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Shoulder",
     name: SHOULDER_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Waist Loose",
     name: WAIST_LOOSE_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "SLV Length",
     name: SLV_LENGTH_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "SLV Round",
     name: SLV_ROUND_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "F.DotPT",
     name: F_DOT_PT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "MidH&Round",
     name: MID_AND_ROUND_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "UpChest",
     name: UP_CHEST_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Top L",
     name: TOP_L_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Seat",
     name: SEAT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Btm HT",
     name: BTM_HT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Btm loose",
     name: BTM_LOOSE_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Hip",
     name: HIP_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "Slit",
     name: SLIT_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   {
     label: "EMB",
     name: EMB_MEASUREMENTS,
-    maxLength: 5,
+    maxLength: MAX_LENGTH,
     keyboardType: PHONE_PAD,
   },
   { label: "Notes", name: NOTES_MEASUREMENTS, maxLength: 150 },
@@ -268,10 +272,10 @@ export const headers = [
   "Cash",
   "Credit Card",
   "Debit Card",
+  "UPI",
   "Payment Status",
   "Stitching Status",
   "Delivery Status",
-  "UPI",
   "length",
   "frontNeckHT",
   "chest",
@@ -329,47 +333,47 @@ export const headers = [
 export const rowData = (data) => {
   return {
     "Order Number": data.orderNumber,
-    Name: data.customerName,
+    "Name": data.customerName,
     "Mobile Number": data.customerMobileNumber,
-    Advance: data.advance,
-    Balance: data.balance,
+    "Advance": data.advance,
+    "Balance": data.balance,
     "Order Date": data.orderDate,
     "Delivery Date": data.deliveryDate,
     "Total Order Value": data.totalOrderValue,
-    Cash: data.isCash ? "Yes" : "No",
+    "Cash": data.isCash ? "Yes" : "No",
     "Credit Card": data.isCreditCard ? "Yes" : "No",
     "Debit Card": data.isFabric ? "Yes" : "No",
+    "UPI": data.isUPI ? "Yes" : "No",
     "Payment Status": data.paymentStatus,
     "Stitching Status": data.stitchingStatus,
     "Delivery Status": data.deliveryStatus,
-    UPI: data.isUPI ? "Yes" : "No",
-    length: data.measurements.find((m) => m.label === "Length")?.value || "",
-    frontNeckHT:
+    "length": data.measurements.find((m) => m.label === "Length")?.value || "",
+    "frontNeckHT":
       data.measurements.find((m) => m.label === "F.NeckHT")?.value || "",
-    chest: data.measurements.find((m) => m.label === "Chest")?.value || "",
-    backNeckHT:
+    "chest": data.measurements.find((m) => m.label === "Chest")?.value || "",
+    "backNeckHT":
       data.measurements.find((m) => m.label === "B.NeckHT")?.value || "",
-    shoulder:
+    "shoulder":
       data.measurements.find((m) => m.label === "Shoulder")?.value || "",
-    waistLoose:
+    "waistLoose":
       data.measurements.find((m) => m.label === "Waist Loose")?.value || "",
-    slvLength:
+    "slvLength":
       data.measurements.find((m) => m.label === "SLV Length")?.value || "",
-    slvRound:
+    "slvRound":
       data.measurements.find((m) => m.label === "SLV Round")?.value || "",
-    fDotPt: data.measurements.find((m) => m.label === "F.DotPT")?.value || "",
-    midAndRound:
+    "fDotPt": data.measurements.find((m) => m.label === "F.DotPT")?.value || "",
+    "midAndRound":
       data.measurements.find((m) => m.label === "MidH&Round")?.value || "",
-    upChest: data.measurements.find((m) => m.label === "UpChest")?.value || "",
+    "upChest": data.measurements.find((m) => m.label === "UpChest")?.value || "",
     "Top L": data.measurements.find((m) => m.label === "Top L")?.value || "",
-    Seat: data.measurements.find((m) => m.label === "Seat")?.value || "",
+    "Seat": data.measurements.find((m) => m.label === "Seat")?.value || "",
     "Btm HT": data.measurements.find((m) => m.label === "Btm HT")?.value || "",
     "Btm loose":
       data.measurements.find((m) => m.label === "Btm loose")?.value || "",
-    Hip: data.measurements.find((m) => m.label === "Hip")?.value || "",
-    Slit: data.measurements.find((m) => m.label === "Slit")?.value || "",
-    EMB: data.measurements.find((m) => m.label === "EMB")?.value || "",
-    Notes: data.measurements.find((m) => m.label === "Notes")?.value || "",
+    "Hip": data.measurements.find((m) => m.label === "Hip")?.value || "",
+    "Slit": data.measurements.find((m) => m.label === "Slit")?.value || "",
+    "EMB": data.measurements.find((m) => m.label === "EMB")?.value || "",
+    "Notes": data.measurements.find((m) => m.label === "Notes")?.value || "",
     "Blouse-Normal cut W/o Lining":
       data.tableData.find((t) => t.Item === "Blouse-Normal cut W/o Lining")
         ?.Qty || "",
@@ -444,8 +448,8 @@ export const rowData = (data) => {
       data.tableData.find((t) => t.Item === "Alternation Work")?.Qty || "",
     "Lining fabric":
       data.tableData.find((t) => t.Item === "Lining fabric")?.Qty || "",
-    Rope: data.tableData.find((t) => t.Item === "Rope")?.Qty || "",
-    Stitching: data.tableData.find((t) => t.Item === "Stitching")?.Qty || "",
+    "Rope": data.tableData.find((t) => t.Item === "Rope")?.Qty || "",
+    "Stitching": data.tableData.find((t) => t.Item === "Stitching")?.Qty || "",
     "Courier&Handling":
       data.tableData.find((t) => t.Item === "Courier&Handling")?.Qty || "",
   };

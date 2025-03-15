@@ -5,7 +5,7 @@ import {
   StyleSheet,
   ToastAndroid,
   TouchableOpacity,
-  View
+  View,
 } from "react-native";
 import { Octicons } from "@expo/vector-icons";
 import * as FileSystem from "expo-file-system";
@@ -23,9 +23,18 @@ export default function WebViewComp({ route }) {
   const handleShare = async () => {
     const tempUri = FileSystem.cacheDirectory + pdfName;
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(tempUri);
-      ToastAndroid.show("Invoice shared successfully!", ToastAndroid.LONG);
-      navigation.navigate("ViewCustomer");
+      try {
+        const result = await Sharing.shareAsync(tempUri);
+        if (result) {
+          ToastAndroid.show("Invoice shared successfully!", ToastAndroid.LONG);
+          navigation.navigate("ViewCustomer");
+        } else {
+          // ToastAndroid.show("Sharing canceled", ToastAndroid.SHORT);
+          // navigation.navigate("ViewCustomer");
+        }
+      } catch (error) {
+        ToastAndroid.show("Error sharing invoice", ToastAndroid.LONG);
+      }
     } else {
       Alert.alert("Sharing is not available on this device.");
     }
@@ -55,8 +64,7 @@ export default function WebViewComp({ route }) {
         try {
           const tempUri = FileSystem.cacheDirectory + pdfName;
           await FileSystem.deleteAsync(tempUri);
-        } catch (error) {
-        }
+        } catch (error) {}
       };
       deleteTempFile();
     };
@@ -124,21 +132,21 @@ export default function WebViewComp({ route }) {
 `;
   return (
     <View style={{ flex: 1 }}>
-    {loading && (
-      <Spinner
-        visible={loading}
-        textContent={"Loading..."}
-        textStyle={styles.spinnerTextStyle}
-      />
-    )}
-    {!loading && (
-      <WebView
-        originWhitelist={["*"]}
-        source={{ html: htmlContent }}
-        style={{ flex: 1 }}
-      />
-    )}
-  </View>
+      {loading && (
+        <Spinner
+          visible={loading}
+          textContent={"Loading..."}
+          textStyle={styles.spinnerTextStyle}
+        />
+      )}
+      {!loading && (
+        <WebView
+          originWhitelist={["*"]}
+          source={{ html: htmlContent }}
+          style={{ flex: 1 }}
+        />
+      )}
+    </View>
   );
 }
 

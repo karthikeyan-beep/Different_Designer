@@ -127,15 +127,35 @@ export const sharePdf = async (data) => {
     });
 
     if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri).then(() => {
-        ToastAndroid.showWithGravityAndOffset(
-          "Share Success",
-          ToastAndroid.LONG,
-          ToastAndroid.BOTTOM,
-          25,
-          50
-        );
-      });
+      await Sharing.shareAsync(fileUri)
+        .then((result) => {
+          if (result) {
+            ToastAndroid.showWithGravityAndOffset(
+              "Share Success",
+              ToastAndroid.LONG,
+              ToastAndroid.BOTTOM,
+              25,
+              50
+            );
+          } else {
+            // ToastAndroid.showWithGravityAndOffset(
+            //   "Sharing Canceled",
+            //   ToastAndroid.SHORT,
+            //   ToastAndroid.BOTTOM,
+            //   25,
+            //   50
+            // );
+          }
+        })
+        .catch(() => {
+          ToastAndroid.showWithGravityAndOffset(
+            "Error sharing receipt",
+            ToastAndroid.LONG,
+            ToastAndroid.BOTTOM,
+            25,
+            50
+          );
+        });
     } else {
       Alert.alert("Share Not available");
     }
@@ -144,7 +164,12 @@ export const sharePdf = async (data) => {
   }
 };
 
-export const createOrUpdateExcel = async (data, directoryUri, excelName, sheetName) => {
+export const createOrUpdateExcel = async (
+  data,
+  directoryUri,
+  excelName,
+  sheetName
+) => {
   const FILE_NAME = `${excelName}.xlsx`;
   try {
     const files =
