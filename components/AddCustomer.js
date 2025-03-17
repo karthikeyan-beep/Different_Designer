@@ -364,14 +364,16 @@ const AddCustomer = () => {
         Alert.alert("No Item Selected", "Please add at least one item.");
         return;
       }
+
+      const isUpdate = orderData?.["Order Number"] ? true : false;
       
       if (type === "share") {
         setIsLoadingShare(true);
-        sharePdf(data);
+        sharePdf(data, navigation, isUpdate);
         setIsLoadingShare(false);
       } else {
         setIsLoadingSave(true);
-        savePdf(data);
+        savePdf(data, undefined, navigation, isUpdate);
         setIsLoadingSave(false);
       }
     }
@@ -1276,7 +1278,7 @@ const AddCustomer = () => {
           />
           <CustomButton
             color="#3E525F"
-            buttonText="Save"
+            buttonText={orderData?.["Order Number"] ? "Update" : "Save"}
             onPress={() => submitPdf("save")}
           />
           <View

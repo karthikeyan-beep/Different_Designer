@@ -182,8 +182,7 @@ export const inputFields = [
   {
     label: "EMB",
     name: EMB_MEASUREMENTS,
-    maxLength: MAX_LENGTH,
-    keyboardType: PHONE_PAD,
+    maxLength: MAX_LENGTH
   },
   { label: "Notes", name: NOTES_MEASUREMENTS, maxLength: 150 },
 ];
@@ -271,7 +270,7 @@ export const headers = [
   "Total Order Value",
   "Cash",
   "Credit Card",
-  "Debit Card",
+  // "Debit Card",
   "UPI",
   "Payment Status",
   "Stitching Status",
@@ -342,7 +341,7 @@ export const rowData = (data) => {
     "Total Order Value": data.totalOrderValue,
     "Cash": data.isCash ? "Yes" : "No",
     "Credit Card": data.isCreditCard ? "Yes" : "No",
-    "Debit Card": data.isFabric ? "Yes" : "No",
+    // "Debit Card": false ? "Yes" : "No",
     "UPI": data.isUPI ? "Yes" : "No",
     "Payment Status": data.paymentStatus,
     "Stitching Status": data.stitchingStatus,

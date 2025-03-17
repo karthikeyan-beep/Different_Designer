@@ -101,6 +101,11 @@ const getOrders = async (showPending) => {
   const excelName = await AsyncStorage.getItem("excelName");
   const sheetName = await AsyncStorage.getItem("sheetName");
 
+  if (!storedDirectoryUri || !excelName || !sheetName) {
+    Alert.alert("Error", "Missing setting details. Please set settings again.");
+    return [];
+  }
+
   const FILE_NAME = `${excelName}.xlsx`;
 
   if (!storedDirectoryUri) {
@@ -137,6 +142,18 @@ const getOrders = async (showPending) => {
       });
 
     const workbook = XLSX.read(existingData, { type: "base64" });
+
+    if (!workbook.Sheets[sheetName]) {
+      ToastAndroid.showWithGravityAndOffset(
+        `No sheet with name ${sheetName} found...`,
+        ToastAndroid.SHORT,
+        ToastAndroid.CENTER,
+        25,
+        50
+      );
+      return [];
+    }
+
     const sheet = workbook.Sheets[sheetName];
     const jsonData = XLSX.utils.sheet_to_json(sheet);
 
@@ -168,7 +185,7 @@ const generateReceipt = (order) => {
     Object.keys(order)
       .filter(
         (key) =>
-          ["Cash", "Credit Card", "Debit Card", "UPI"].includes(key) &&
+          ["Cash", "Credit Card", "UPI"].includes(key) &&
           order[key] !== "No"
       )
       .join(", ") || "";
@@ -199,7 +216,9 @@ const generateReceipt = (order) => {
 <head>
   <style>
     body { font-family: Arial, sans-serif; padding: 20px; text-align: center; }
-    h2 { color: #1F4E67; }
+    h2 { color: #1F4E67;  margin-top: 0px; }
+    h5 { color: #1F4E67;  margin-top: 0px; }
+    h4 { margin-top: 0px; }
     table { width: 100%; border-collapse: collapse; margin-top: 10px; }
     th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
     th { background-color: #1F4E67; color: white; }
@@ -208,6 +227,14 @@ const generateReceipt = (order) => {
     .order-details {
       text-align: left;
       margin-top: 20px;
+    }
+
+   .disclaimer {
+      margin-top: 20px;
+      font-size: 14px;
+      color: #000;
+      font-weight: bold;
+      text-align: center;
     }
  
     /* Background PAID stamp */
@@ -229,9 +256,9 @@ const generateReceipt = (order) => {
 </head>
 <body>
   <div class="paid-stamp">PAID</div>
-
   <h2>Different Designer</h2>
-  <h3>Receipt</h3>
+  <h5>The House of Ladies Wear Stitching and Embroidery Work</h2>
+  <h4>Receipt</h4>
 
   <!-- Order Details Moved to Left -->
   <div class="order-details">
@@ -267,6 +294,10 @@ const generateReceipt = (order) => {
       <td>${paymentMethods}</td>
     </tr>
   </table>
+  <!-- Disclaimer -->
+  <p class="disclaimer">
+    ** This is a digitally generated receipt and does not require a signature.
+  </p>
 </body>
 </html>`;
   return receiptHTML;
@@ -274,7 +305,7 @@ const generateReceipt = (order) => {
 
 const sharePdf = async (order) => {
   try {
-    const fileName = `Bill_${order["Order Number"]}.pdf`;
+    const fileName = `Receipt_${order["Order Number"]}.pdf`;
 
     const { uri } = await Print.printToFileAsync({
       html: generateReceipt(order),
@@ -345,7 +376,27 @@ const saveReceipt = async (order) => {
       }
     }
 
-    const fileName = `Bill_${order["Order Number"]}.pdf`;
+    const fileName = `Receipt_${order["Order Number"]}.pdf`;
+
+    const files =
+        await FileSystem.StorageAccessFramework.readDirectoryAsync(directoryUri);
+
+    const matchingFiles = files.filter((file) => file.includes(fileName));
+
+     if (matchingFiles.length > 0) {
+        for (const file of matchingFiles) {
+          await FileSystem.StorageAccessFramework.deleteAsync(file);
+          const decodedFileUri = decodeURIComponent(file);
+          ToastAndroid.showWithGravityAndOffset(
+            `Removing old Receipt ${decodedFileUri.split("/").pop()}`,
+            ToastAndroid.SHORT,
+            ToastAndroid.CENTER,
+            25,
+            50
+          );
+        }
+      }
+
 
     const { uri } = await Print.printToFileAsync({
       html: generateReceipt(order),
@@ -396,6 +447,9 @@ const getStatusColor = (status) => {
 };
 
 const parseDate = (dateStr) => {
+  if (!dateStr || typeof dateStr !== "string") {
+    return new Date(0);
+  }
   const [day, month, year] = dateStr.split("-");
   return new Date(`${year}-${month}-${day}`);
 };
@@ -405,7 +459,13 @@ const getDaysRemaining = (orderDate, deliveryDate) => {
   const delivery = parseDate(deliveryDate);
   const diffTime = delivery - order;
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-  return diffDays > 0 ? `${diffDays} days left` : "Due today";
+  if (diffDays > 0) {
+    return `${diffDays} days left`;
+  } else if (diffDays === 0) {
+    return "Due today";
+  } else {
+    return `Overdue by ${Math.abs(diffDays)} days`;
+  }
 };
 
 const OrderList = ({ orders, showPending }) => {

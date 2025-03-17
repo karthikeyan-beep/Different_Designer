@@ -1,4 +1,4 @@
-import { Alert, ToastAndroid } from "react-native";
+import { Alert, ToastAndroid, AppState } from "react-native";
 import { base64Qr, headers, rowData } from "../Constants";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import * as FileSystem from "expo-file-system";
@@ -21,7 +21,16 @@ export const formatDate = (date) => {
   return `${day}-${month}-${year}`;
 };
 
-export const savePdf = async (data) => {
+const handleIncrement = async (OrderNumber) => {
+  try {
+    let increment = Number(OrderNumber) + 1;
+    await AsyncStorage.setItem("orderNumber", JSON.stringify(increment));
+  } catch (error) {
+    Alert.alert("Something went while order increment!");
+  }
+};
+
+export const savePdf = async (data, uri, navigation, isUpdate) => {
   const orderNumber = data.orderNumber?.toString() || "";
   let customerName = data.customerName.replace(/\s+/g, "_");
   const filename = `Invoice_${orderNumber}_${customerName}.pdf`;
@@ -44,6 +53,28 @@ export const savePdf = async (data) => {
     }
   }
 
+  if (!uri && !isUpdate) {
+    const userResponse = await new Promise((resolve) => {
+      Alert.alert(
+        "Confirm Before Saving",
+        "Once saved, screen will be refreshed for new order assignment. Have you reviewed the details?",
+        [
+          {
+            text: "No, Go Back",
+            style: "cancel",
+            onPress: () => resolve(false),
+          },
+          {
+            text: "Yes, Proceed",
+            onPress: () => resolve(true),
+          },
+        ]
+      );
+    });
+
+    if (!userResponse) return;
+  }
+
   await createOrUpdateExcel(data, directoryUri, excelName, sheetName);
 
   ToastAndroid.showWithGravityAndOffset(
@@ -54,10 +85,6 @@ export const savePdf = async (data) => {
     50
   );
 
-  const { uri } = await Print.printToFileAsync({
-    html: generateHtmlContent(data),
-  });
-
   ToastAndroid.showWithGravityAndOffset(
     `Starting PDF Creation for Order : ${data.orderNumber}`,
     ToastAndroid.SHORT,
@@ -67,6 +94,7 @@ export const savePdf = async (data) => {
   );
 
   const filenamePrefix = `Invoice_${orderNumber}`;
+
   const files =
     await FileSystem.StorageAccessFramework.readDirectoryAsync(directoryUri);
 
@@ -86,7 +114,11 @@ export const savePdf = async (data) => {
     }
   }
 
-  const base64 = await FileSystem.readAsStringAsync(uri, {
+  const fileUri =
+    uri ||
+    (await Print.printToFileAsync({ html: generateHtmlContent(data) })).uri;
+
+  const base64 = await FileSystem.readAsStringAsync(fileUri, {
     encoding: FileSystem.EncodingType.Base64,
   });
 
@@ -109,11 +141,42 @@ export const savePdf = async (data) => {
     25,
     50
   );
+
+  if (!isUpdate && !uri) {
+    handleIncrement(orderNumber);
+    setTimeout(() => {
+      navigation.navigate("Welcome");
+    }, 6000);
+  } else if (isUpdate && !uri) {
+    navigation.goBack();
+  }
 };
 
-export const sharePdf = async (data) => {
+export const sharePdf = async (data, navigation, isUpdate) => {
   try {
     const orderNumber = data.orderNumber?.toString() || "";
+
+    if (!isUpdate) {
+      const userResponse = await new Promise((resolve) => {
+        Alert.alert(
+          "Confirm Before Sharing",
+          "Once sharing is initiated, screen will be refreshed for new order assignment. Have you reviewed the details?",
+          [
+            {
+              text: "No",
+              style: "cancel",
+              onPress: () => resolve(false),
+            },
+            {
+              text: "Yes",
+              onPress: () => resolve(true),
+            },
+          ]
+        );
+      });
+
+      if (!userResponse) return;
+    }
 
     const { uri } = await Print.printToFileAsync({
       html: generateHtmlContent(data),
@@ -121,33 +184,42 @@ export const sharePdf = async (data) => {
 
     const fileUri = `${FileSystem.documentDirectory}Invoice_${orderNumber}_${data.customerName}.pdf`;
 
+    await savePdf(data, uri);
+
     await FileSystem.moveAsync({
       from: uri,
       to: fileUri,
     });
 
-    if (await Sharing.isAvailableAsync()) {
-      await Sharing.shareAsync(fileUri)
-        .then((result) => {
-          if (result) {
-            ToastAndroid.showWithGravityAndOffset(
-              "Share Success",
-              ToastAndroid.LONG,
-              ToastAndroid.BOTTOM,
-              25,
-              50
-            );
-          } else {
-            // ToastAndroid.showWithGravityAndOffset(
-            //   "Sharing Canceled",
-            //   ToastAndroid.SHORT,
-            //   ToastAndroid.BOTTOM,
-            //   25,
-            //   50
-            // );
+    setTimeout(async () => {
+      if (await Sharing.isAvailableAsync()) {
+        let isSharing = true;
+        let subscription;
+
+        const handleAppStateChange = (nextAppState) => {
+          if (nextAppState === "active" && isSharing) {
+            isSharing = false;
+            subscription.remove();
+            if (!isUpdate) {
+              handleIncrement(orderNumber);
+              navigation.navigate("Welcome");
+            } else {
+              navigation.goBack();
+            }
           }
-        })
-        .catch(() => {
+        };
+
+        subscription = AppState.addEventListener(
+          "change",
+          handleAppStateChange
+        );
+
+        try {
+          await Sharing.shareAsync(fileUri);
+          isSharing = true;
+        } catch (error) {
+          isSharing = false;
+          subscription.remove();
           ToastAndroid.showWithGravityAndOffset(
             "Error sharing receipt",
             ToastAndroid.LONG,
@@ -155,10 +227,11 @@ export const sharePdf = async (data) => {
             25,
             50
           );
-        });
-    } else {
-      Alert.alert("Share Not available");
-    }
+        }
+      } else {
+        Alert.alert("Share Not available");
+      }
+    }, 6000);
   } catch (error) {
     Alert.alert(error, "An error occurred while creating the PDF.");
   }
@@ -217,6 +290,20 @@ export const createOrUpdateExcel = async (
         });
 
       const workbook = XLSX.read(existingData, { type: "base64" });
+
+      if (!workbook.Sheets[sheetName]) {
+        ToastAndroid.showWithGravityAndOffset(
+          `Creating new ${sheetName} file...`,
+          ToastAndroid.SHORT,
+          ToastAndroid.CENTER,
+          25,
+          50
+        );
+        const newSheet = XLSX.utils.json_to_sheet([rowData(data)], {
+          header: headers,
+        });
+        XLSX.utils.book_append_sheet(workbook, newSheet, sheetName);
+      }
 
       const sheet = workbook.Sheets[sheetName];
 
@@ -302,7 +389,7 @@ function generateHtmlContent(data) {
         (m) => `
       <td style="padding: 4px 6px; text-align: left; font-size: 12px;">
         <span style="display: inline-block; min-width: 80px;  line-height: 1; margin-bottom: 0;"><b>${m.label}</b>:</span> 
-        ${parseFloat(m.value).toFixed(2)}
+        ${m.label === "EMB" ? m.value : parseFloat(m.value).toFixed(2)}
       </td>`
       )
       .join("")}
